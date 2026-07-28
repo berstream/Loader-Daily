@@ -18,6 +18,20 @@
   --red:#FF5D5D; --red-bg:rgba(255,93,93,.12);
   --blue:#5AA7FF;
   --r:14px;
+  --gridline:rgba(255,178,36,.025);
+  --topbar:rgba(11,14,19,.92);
+  --shadow:0 6px 20px rgba(0,0,0,.4);
+}
+body.light{
+  --ink:#F2F4F8; --panel:#FFFFFF; --panel2:#F5F7FB; --line:#E3E7EF; --line2:#C9D2E0;
+  --txt:#1B2233; --sub:#5C687E; --mut:#939DB2;
+  --amber:#E08E00; --amber-deep:#B87700; --amber-glow:rgba(224,142,0,.12);
+  --teal:#0FA47C; --teal-bg:rgba(15,164,124,.12);
+  --red:#D93F3F; --red-bg:rgba(217,63,63,.1);
+  --blue:#2E7CD6;
+  --gridline:rgba(27,34,51,.05);
+  --topbar:rgba(248,249,252,.92);
+  --shadow:0 6px 20px rgba(30,40,60,.14);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
@@ -25,9 +39,10 @@ body{
   font-family:'IBM Plex Sans Thai',sans-serif;background:var(--ink);color:var(--txt);
   min-height:100vh;
   background-image:
-    linear-gradient(rgba(255,178,36,.025) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,178,36,.025) 1px,transparent 1px);
+    linear-gradient(var(--gridline) 1px,transparent 1px),
+    linear-gradient(90deg,var(--gridline) 1px,transparent 1px);
   background-size:44px 44px;
+  transition:background-color .3s,color .3s;
 }
 .mono{font-family:'IBM Plex Mono',monospace}
 .app{max-width:520px;margin:0 auto;padding:0 16px 90px}
@@ -38,7 +53,7 @@ body{
 
 /* ---------- top clock bar ---------- */
 .clockbar{
-  position:sticky;top:0;z-index:50;background:rgba(11,14,19,.92);backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:50;background:var(--topbar);backdrop-filter:blur(8px);
   border-bottom:1px solid var(--line);margin:0 -16px;padding:12px 20px 10px;
 }
 .clockbar .row{display:flex;justify-content:space-between;align-items:flex-end;max-width:520px;margin:0 auto}
@@ -241,6 +256,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* admin nav */
 .adminnav{display:flex;gap:8px;margin-top:14px}
 .adminnav .tab{font-size:13px}
+.themebtn{
+  position:fixed;bottom:22px;right:18px;z-index:90;width:48px;height:48px;border-radius:50%;
+  background:var(--panel);border:1px solid var(--line2);color:var(--txt);font-size:21px;
+  cursor:pointer;box-shadow:var(--shadow);transition:transform .15s,background .3s;
+  display:flex;align-items:center;justify-content:center;
+}
+.themebtn:active{transform:scale(.9)}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.25);border-top-color:currentColor;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media(max-width:420px){.clock .time{font-size:26px}.stats{gap:8px}.stat .val{font-size:24px}}
@@ -337,7 +359,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <h2>รูปภาพการโหลด <span class="tag">PHOTOS</span></h2>
       <div class="drop" id="dropzone" onclick="document.getElementById('fileInput').click()">
         <div class="big">📸</div>
-        <p><b>แตะเพื่อถ่ายรูป / เลือกรูป</b><br>สูงสุด 80 รูป · ระบบย่อเป็น FHD ≤ 800KB อัตโนมัติ</p>
+        <p><b>แตะเพื่อถ่ายรูป / เลือกรูป</b><br>สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป</p>
       </div>
       <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
       <div class="photometa">
@@ -428,6 +450,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 </div>
 
+<button class="themebtn" id="themeBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">☀️</button>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -469,6 +493,21 @@ function tick() {
   document.getElementById('clkDate').innerHTML = dateStr;
 }
 setInterval(tick, 1000); tick();
+
+/* ================= THEME ================= */
+function applyTheme(t) {
+  document.body.classList.toggle('light', t === 'light');
+  document.getElementById('themeBtn').textContent = t === 'light' ? '🌙' : '☀️';
+  try { localStorage.setItem('wfdc_theme', t); } catch (e) {}
+}
+function toggleTheme() {
+  applyTheme(document.body.classList.contains('light') ? 'dark' : 'light');
+}
+(function initTheme() {
+  var saved = 'dark';
+  try { saved = localStorage.getItem('wfdc_theme') || 'dark'; } catch (e) {}
+  applyTheme(saved);
+})();
 
 /* ================= TOAST ================= */
 var toastTimer;
@@ -545,21 +584,46 @@ function logout() {
 })();
 
 /* ================= STORES ================= */
-function loadStores() {
+function renderStores(stores) {
+  S.stores = stores;
+  var cur1 = document.getElementById('fStore').value;
+  var cur2 = document.getElementById('expStore').value;
+  var opts = '<option value="">— เลือก Store —</option>';
+  var eopts = '<option value="">ทุก Store</option>';
+  stores.forEach(function (st) {
+    var label = st.code + (st.name ? ' · ' + st.name : '');
+    opts += '<option value="' + st.code + '">' + label + '</option>';
+    eopts += '<option value="' + st.code + '">' + label + '</option>';
+  });
+  document.getElementById('fStore').innerHTML = opts;
+  document.getElementById('expStore').innerHTML = eopts;
+  if (cur1) document.getElementById('fStore').value = cur1;
+  if (cur2) document.getElementById('expStore').value = cur2;
+}
+
+function loadStores(attempt) {
+  attempt = attempt || 1;
   api({ action: 'getStores' }).then(function (res) {
-    if (!res.ok) return;
-    S.stores = res.stores;
-    var opts = '<option value="">— เลือก Store —</option>';
-    var eopts = '<option value="">ทุก Store</option>';
-    res.stores.forEach(function (st) {
-      var label = st.code + (st.name ? ' · ' + st.name : '');
-      opts += '<option value="' + st.code + '">' + label + '</option>';
-      eopts += '<option value="' + st.code + '">' + label + '</option>';
-    });
-    document.getElementById('fStore').innerHTML = opts;
-    document.getElementById('expStore').innerHTML = eopts;
+    if (!res.ok || !res.stores) throw new Error('bad');
+    renderStores(res.stores);
+    try { localStorage.setItem('wfdc_stores', JSON.stringify(res.stores)); } catch (e) {}
+  }).catch(function () {
+    if (attempt < 3) {
+      setTimeout(function () { loadStores(attempt + 1); }, attempt * 2000);
+    } else if (!S.stores.length) {
+      toast('โหลดรายชื่อ Store ไม่สำเร็จ — ตรวจสัญญาณเน็ตแล้วลองรีเฟรช', true);
+    }
   });
 }
+
+/* แสดงจาก cache ทันที + prefetch อุ่นเครื่อง GAS ตั้งแต่เปิดหน้า (ก่อน login) */
+(function bootStores() {
+  try {
+    var cached = JSON.parse(localStorage.getItem('wfdc_stores') || 'null');
+    if (cached && cached.length) renderStores(cached);
+  } catch (e) {}
+  loadStores();
+})();
 
 /* ================= TRUCK TILES ================= */
 document.getElementById('truckTiles').addEventListener('click', function (e) {
@@ -612,7 +676,7 @@ function compressImage(file) {
     var url = URL.createObjectURL(file);
     img.onload = function () {
       URL.revokeObjectURL(url);
-      var MAX = 1920;
+      var MAX = 2560;
       var w = img.width, h = img.height;
       if (Math.max(w, h) > MAX) {
         var ratio = MAX / Math.max(w, h);
@@ -621,10 +685,11 @@ function compressImage(file) {
       var cv = document.createElement('canvas');
       cv.width = w; cv.height = h;
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
-      var q = 0.85;
+      var qualities = [0.95, 0.92, 0.88, 0.84, 0.8, 0.75, 0.7, 0.62, 0.55];
+      var qi = 0;
       function attempt() {
         cv.toBlob(function (blob) {
-          if (blob.size > 800 * 1024 && q > 0.4) { q -= 0.1; attempt(); }
+          if (blob.size > 800 * 1024 && qi < qualities.length - 1) { qi++; attempt(); }
           else {
             resolve({
               name: 'IMG_' + Date.now() + '_' + Math.floor(Math.random() * 1000) + '.jpg',
@@ -632,7 +697,7 @@ function compressImage(file) {
               dataUrl: cv.toDataURL('image/jpeg', 0.4)
             });
           }
-        }, 'image/jpeg', q);
+        }, 'image/jpeg', qualities[qi]);
       }
       attempt();
     };
