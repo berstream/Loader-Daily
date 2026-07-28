@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>WFDC Container Loading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --ink:#0B0E13; --panel:#131822; --panel2:#1A2130; --line:#242D3F; --line2:#313C52;
+  --txt:#E8ECF4; --sub:#8B96AC; --mut:#5A6478;
+  --amber:#FFB224; --amber-deep:#B87700; --amber-glow:rgba(255,178,36,.14);
+  --teal:#2DD4A7; --teal-bg:rgba(45,212,167,.12);
+  --red:#FF5D5D; --red-bg:rgba(255,93,93,.12);
+  --blue:#5AA7FF;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  font-family:'IBM Plex Sans Thai',sans-serif;background:var(--ink);color:var(--txt);
+  min-height:100vh;
+  background-image:
+    linear-gradient(rgba(255,178,36,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,178,36,.025) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+.mono{font-family:'IBM Plex Mono',monospace}
+.app{max-width:520px;margin:0 auto;padding:0 16px 90px}
+.app.wide{max-width:960px}
+
+/* ---------- hazard stripe accent ---------- */
+.hazard{height:6px;background:repeating-linear-gradient(-45deg,var(--amber) 0 14px,#0B0E13 14px 28px);border-radius:0 0 4px 4px}
+
+/* ---------- top clock bar ---------- */
+.clockbar{
+  position:sticky;top:0;z-index:50;background:rgba(11,14,19,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);margin:0 -16px;padding:12px 20px 10px;
+}
+.clockbar .row{display:flex;justify-content:space-between;align-items:flex-end;max-width:520px;margin:0 auto}
+.app.wide .clockbar .row{max-width:960px}
+.brand{font-size:12px;letter-spacing:.14em;color:var(--amber);font-weight:600}
+.brand small{display:block;color:var(--mut);letter-spacing:.05em;font-weight:400;margin-top:2px;font-size:11px}
+.clock{text-align:right}
+.clock .time{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;line-height:1;letter-spacing:.02em}
+.clock .time .sec{font-size:16px;color:var(--sub)}
+.clock .date{font-size:12px;color:var(--sub);margin-top:3px}
+.clock .night{color:var(--amber);font-weight:600}
+.userchip{display:flex;align-items:center;gap:8px;margin-top:8px;max-width:520px;margin-left:auto;margin-right:auto;justify-content:space-between}
+.app.wide .userchip{max-width:960px}
+.userchip .who{font-size:12px;color:var(--sub)}
+.userchip .who b{color:var(--txt);font-weight:600}
+.userchip button{background:none;border:1px solid var(--line2);color:var(--sub);font-size:11px;padding:4px 12px;border-radius:99px;cursor:pointer;font-family:inherit}
+
+/* ---------- views ---------- */
+.view{display:none;animation:rise .4s ease both}
+.view.on{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---------- login ---------- */
+.login-hero{padding:56px 0 32px;text-align:center;animation:rise .5s ease both}
+.login-hero .glyph{
+  width:76px;height:76px;margin:0 auto 18px;border-radius:20px;background:var(--amber-glow);
+  border:1px solid rgba(255,178,36,.35);display:flex;align-items:center;justify-content:center;font-size:38px;
+}
+.login-hero h1{font-size:24px;font-weight:700;letter-spacing:.01em}
+.login-hero p{color:var(--sub);font-size:14px;margin-top:6px}
+.rolecard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;
+  cursor:pointer;display:flex;gap:16px;align-items:center;margin-bottom:14px;
+  transition:border-color .2s,transform .15s;animation:rise .5s ease both;
+}
+.rolecard:active{transform:scale(.985)}
+.rolecard:hover{border-color:var(--amber-deep)}
+.rolecard .ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.rolecard.loader .ic{background:var(--amber-glow);border:1px solid rgba(255,178,36,.3)}
+.rolecard.admin .ic{background:rgba(90,167,255,.12);border:1px solid rgba(90,167,255,.3)}
+.rolecard h3{font-size:17px;font-weight:600}
+.rolecard p{font-size:13px;color:var(--sub);margin-top:2px}
+.rolecard .arrow{margin-left:auto;color:var(--mut);font-size:20px}
+.login-form{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:22px;animation:rise .3s ease both}
+.login-form h3{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* ---------- form controls ---------- */
+label.f{display:block;font-size:13px;color:var(--sub);margin:0 0 6px;font-weight:500}
+input[type=text],input[type=password],input[type=date],select{
+  width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--txt);
+  border-radius:10px;padding:13px 14px;font-size:16px;font-family:inherit;outline:none;
+  transition:border-color .2s,box-shadow .2s;appearance:none;
+}
+input:focus,select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-glow)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238B96AC' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.fgroup{margin-bottom:16px}
+.hint{font-size:12px;color:var(--mut);margin-top:5px}
+.err{font-size:13px;color:var(--red);margin-top:6px;display:none}
+.err.on{display:block}
+
+/* ---------- buttons ---------- */
+.btn{
+  width:100%;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:transform .12s,opacity .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-amber{background:var(--amber);color:#1A1200}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--txt)}
+.btn-teal{background:var(--teal);color:#00291D}
+.btn-sm{padding:10px 14px;font-size:14px;width:auto}
+
+/* ---------- upload card ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-top:16px;animation:rise .45s ease both}
+.card h2{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card h2 .tag{font-size:11px;background:var(--amber-glow);color:var(--amber);padding:3px 10px;border-radius:99px;font-weight:600;letter-spacing:.05em}
+
+/* truck size tiles */
+.trucks{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.truck{
+  background:var(--panel2);border:1.5px solid var(--line2);border-radius:12px;padding:12px 4px 10px;
+  text-align:center;cursor:pointer;transition:all .15s;user-select:none;
+}
+.truck .n{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1}
+.truck .l{font-size:11px;color:var(--sub);margin-top:3px}
+.truck.sel{background:var(--amber-glow);border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,178,36,.08)}
+.truck.sel .n{color:var(--amber)}
+.truck.sel .l{color:var(--amber)}
+.truck:active{transform:scale(.95)}
+
+/* dropzone */
+.drop{
+  border:2px dashed var(--line2);border-radius:14px;padding:26px 16px;text-align:center;
+  cursor:pointer;transition:border-color .2s,background .2s;
+}
+.drop:hover,.drop.hot{border-color:var(--amber);background:var(--amber-glow)}
+.drop .big{font-size:34px;line-height:1}
+.drop p{font-size:14px;color:var(--sub);margin-top:8px}
+.drop b{color:var(--txt)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin-top:14px}
+.thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--panel2);animation:pop .25s ease both}
+@keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .x{
+  position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.65);color:#fff;border:none;font-size:12px;line-height:1;cursor:pointer;
+}
+.photometa{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;color:var(--sub)}
+.photometa .cnt{font-family:'IBM Plex Mono',monospace;color:var(--amber);font-weight:600}
+
+/* progress */
+.prog{margin-top:16px;display:none}
+.prog.on{display:block}
+.prog .bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.prog .fill{height:100%;width:0;background:linear-gradient(90deg,var(--amber-deep),var(--amber));border-radius:99px;transition:width .3s}
+.prog .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:6px}
+.prog .lbl b{color:var(--amber)}
+
+/* success */
+.success{text-align:center;padding:44px 20px}
+.success .ring{
+  width:88px;height:88px;margin:0 auto 20px;border-radius:50%;background:var(--teal-bg);
+  border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-size:42px;color:var(--teal);
+  animation:pop .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+.success h2{font-size:20px;font-weight:700}
+.success .meta{margin:18px auto 26px;max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:left;font-size:14px}
+.success .meta div{display:flex;justify-content:space-between;padding:5px 0}
+.success .meta span{color:var(--sub)}
+.success .meta b{font-weight:600}
+
+/* ---------- dashboard ---------- */
+.tabs{display:flex;gap:8px;margin-top:16px}
+.tab{
+  flex:1;padding:11px;background:var(--panel);border:1px solid var(--line);border-radius:11px;
+  text-align:center;font-size:14px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .15s;
+}
+.tab.on{background:var(--amber-glow);border-color:var(--amber);color:var(--amber);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 14px;animation:rise .4s ease both}
+.stat:nth-child(2){animation-delay:.06s}.stat:nth-child(3){animation-delay:.12s}
+.stat .lbl{font-size:12px;color:var(--sub)}
+.stat .val{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;margin-top:6px;line-height:1}
+.stat .val.am{color:var(--amber)}
+.chartcard{overflow:hidden}
+.bars{display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:8px}
+.barcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.barcol .b{width:100%;max-width:44px;background:var(--line2);border-radius:6px 6px 0 0;transition:height .5s cubic-bezier(.34,1.3,.64,1);min-height:3px;position:relative}
+.barcol .b.hot{background:linear-gradient(180deg,var(--amber),var(--amber-deep))}
+.barcol .b .v{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sub)}
+.barcol .b.hot .v{color:var(--amber);font-weight:600}
+.barcol .d{font-size:11px;color:var(--mut)}
+.filters{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.filters>*{flex:1;min-width:140px}
+
+/* trip table */
+.triplist{margin-top:16px}
+.trip{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;
+  display:grid;grid-template-columns:1fr auto;gap:4px 12px;cursor:pointer;transition:border-color .2s;animation:rise .35s ease both;
+}
+.trip:hover{border-color:var(--line2)}
+.trip .t1{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+.trip .badge{font-size:11px;padding:2px 9px;border-radius:99px;background:var(--panel2);border:1px solid var(--line2);color:var(--sub);font-family:'IBM Plex Mono',monospace}
+.trip .night-b{background:var(--amber-glow);border-color:rgba(255,178,36,.4);color:var(--amber)}
+.trip .t2{font-size:13px;color:var(--sub);grid-column:1}
+.trip .right{grid-row:1/3;grid-column:2;text-align:right;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.trip .right .time{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600}
+.trip .right .ph{font-size:12px;color:var(--sub)}
+.empty{padding:40px;text-align:center;color:var(--mut);font-size:14px}
+
+/* ---------- export ---------- */
+.exp-summary{background:var(--panel2);border-radius:11px;padding:13px 15px;font-size:14px;color:var(--sub);margin-top:14px;display:none}
+.exp-summary.on{display:block}
+.exp-summary b{color:var(--amber);font-family:'IBM Plex Mono',monospace}
+.dl-row{display:flex;gap:10px;margin-top:14px}
+.dl-row .btn{flex:1}
+
+/* photo viewer modal */
+.modal{position:fixed;inset:0;background:rgba(5,7,10,.9);z-index:100;display:none;overflow-y:auto;padding:20px}
+.modal.on{display:block}
+.modal .inner{max-width:720px;margin:0 auto}
+.modal .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;position:sticky;top:0;background:rgba(5,7,10,.92);padding:8px 0;z-index:2}
+.modal .mhead h3{font-size:16px}
+.modal .mhead button{background:var(--panel);border:1px solid var(--line2);color:var(--txt);width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mgrid img{width:100%;border-radius:10px;display:block;background:var(--panel)}
+.loadmore{margin:16px auto;display:block}
+
+/* toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--panel2);border:1px solid var(--line2);color:var(--txt);padding:12px 22px;
+  border-radius:99px;font-size:14px;z-index:200;transition:transform .3s;box-shadow:0 8px 30px rgba(0,0,0,.5);white-space:nowrap;
+}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.toast.bad{border-color:var(--red);color:var(--red)}
+
+/* admin nav */
+.adminnav{display:flex;gap:8px;margin-top:14px}
+.adminnav .tab{font-size:13px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.25);border-top-color:currentColor;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:420px){.clock .time{font-size:26px}.stats{gap:8px}.stat .val{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="app" id="appShell">
+
+  <!-- ============ CLOCK BAR ============ -->
+  <div class="clockbar" id="clockbar" style="display:none">
+    <div class="row">
+      <div class="brand">WFDC<br>CONTAINER LOADING<small id="roleLabel"></small></div>
+      <div class="clock">
+        <div class="time mono" id="clkTime">--:--<span class="sec">:--</span></div>
+        <div class="date" id="clkDate">—</div>
+      </div>
+    </div>
+    <div class="userchip" id="userchip" style="display:none">
+      <span class="who">ผู้ใช้งาน: <b id="whoName">—</b></span>
+      <button onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: LOGIN ============ -->
+  <div class="view on" id="v-login">
+    <div class="login-hero">
+      <div class="glyph">🏗️</div>
+      <h1>WFDC Container Loading</h1>
+      <p>ระบบบันทึกภาพโหลดสินค้าเข้าตู้คอนเทนเนอร์</p>
+    </div>
+    <div id="roleSelect">
+      <div class="rolecard loader" onclick="showLoaderForm()">
+        <div class="ic">📦</div>
+        <div><h3>Loader</h3><p>พนักงานโหลดสินค้า — บันทึกและอัพโหลดรูป</p></div>
+        <div class="arrow">›</div>
+      </div>
+      <div class="rolecard admin" style="animation-delay:.08s" onclick="showAdminForm()">
+        <div class="ic">🗂️</div>
+        <div><h3>Warehouse Admin</h3><p>Dashboard · ดึงข้อมูลย้อนหลัง · Export</p></div>
+        <div class="arrow">›</div>
+      </div>
+    </div>
+    <div class="login-form" id="loaderForm" style="display:none">
+      <h3>📦 เข้าใช้งานแบบ Loader</h3>
+      <div class="fgroup">
+        <label class="f">ชื่อผู้โหลด</label>
+        <input type="text" id="inLoaderName" placeholder="เช่น สมชาย ใจดี" autocomplete="off">
+      </div>
+      <button class="btn btn-amber" onclick="loginLoader()">เริ่มทำงาน</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="backToRoles()">ย้อนกลับ</button>
+    </div>
+    <div class="login-form" id="adminForm" style="display:none">
+      <h3>🗂️ เข้าใช้งานแบบ Warehouse Admin</h3>
+      <div class="fgroup">
+        <label class="f">รหัสผ่าน</label>
+        <input type="password" id="inAdminPass" placeholder="••••••••">
+        <div class="err" id="adminErr">รหัสผ่านไม่ถูกต้อง</div>
+      </div>
+      <button class="btn btn-amber" id="btnAdminLogin" onclick="loginAdmin()">เข้าสู่ระบบ</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="backToRoles()">ย้อนกลับ</button>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: UPLOAD ============ -->
+  <div class="view" id="v-upload">
+    <div class="card">
+      <h2>ข้อมูลเที่ยวขนส่ง <span class="tag">TRIP</span></h2>
+      <div class="fgroup">
+        <label class="f">เลขทะเบียนรถ</label>
+        <input type="text" id="fPlate" placeholder="เช่น 82-1234 อยุธยา" autocomplete="off">
+      </div>
+      <div class="fgroup">
+        <label class="f">Store ปลายทาง</label>
+        <select id="fStore"><option value="">— เลือก Store —</option></select>
+      </div>
+      <div class="fgroup">
+        <label class="f">เลข Load Manifest</label>
+        <input type="text" id="fManifest" placeholder="เช่น LM-20260728-001" autocomplete="off">
+        <div class="err" id="manErr">เลข Manifest นี้ถูกใช้ไปแล้ว</div>
+      </div>
+      <div class="fgroup" style="margin-bottom:0">
+        <label class="f">ขนาดรถขนส่ง</label>
+        <div class="trucks" id="truckTiles">
+          <div class="truck" data-v="4"><div class="n">4</div><div class="l">ล้อ</div></div>
+          <div class="truck" data-v="6"><div class="n">6</div><div class="l">ล้อ</div></div>
+          <div class="truck" data-v="8"><div class="n">8</div><div class="l">ล้อ</div></div>
+          <div class="truck" data-v="10"><div class="n">10</div><div class="l">ล้อ</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>รูปภาพการโหลด <span class="tag">PHOTOS</span></h2>
+      <div class="drop" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <div class="big">📸</div>
+        <p><b>แตะเพื่อถ่ายรูป / เลือกรูป</b><br>สูงสุด 80 รูป · ระบบย่อเป็น FHD ≤ 800KB อัตโนมัติ</p>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+      <div class="photometa">
+        <span>เลือกแล้ว <span class="cnt" id="photoCount">0</span> / 80 รูป</span>
+        <button class="btn btn-ghost btn-sm" id="btnClearPhotos" style="display:none" onclick="clearPhotos()">ล้างทั้งหมด</button>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="prog" id="prog">
+        <div class="bar"><div class="fill" id="progFill"></div></div>
+        <div class="lbl"><span id="progText">กำลังเตรียม...</span><b id="progPct">0%</b></div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px">
+      <button class="btn btn-amber" id="btnSubmit" onclick="submitTrip()">🚚 บันทึกและอัพโหลด</button>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: SUCCESS ============ -->
+  <div class="view" id="v-success">
+    <div class="success">
+      <div class="ring">✓</div>
+      <h2>บันทึก Trip สำเร็จ</h2>
+      <div class="meta" id="successMeta"></div>
+      <button class="btn btn-amber" onclick="resetUpload()">＋ บันทึก Trip ถัดไป</button>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: ADMIN ============ -->
+  <div class="view" id="v-admin">
+    <div class="adminnav">
+      <div class="tab on" id="tabDash" onclick="adminTab('dash')">📊 Dashboard</div>
+      <div class="tab" id="tabExp" onclick="adminTab('exp')">📥 ดึงข้อมูลย้อนหลัง</div>
+      <div class="tab" id="tabUp" onclick="adminTab('up')">📦 อัพโหลดแทน</div>
+    </div>
+
+    <!-- dashboard -->
+    <div id="adm-dash">
+      <div class="filters">
+        <div><label class="f">จากวันที่</label><input type="date" id="dashFrom"></div>
+        <div><label class="f">ถึงวันที่</label><input type="date" id="dashTo"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn btn-ghost btn-sm" style="width:100%" onclick="loadDashboard()">🔄 โหลดข้อมูล</button></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="lbl">Trip ทั้งหมด</div><div class="val am" id="stTrips">—</div></div>
+        <div class="stat"><div class="lbl">รูปทั้งหมด</div><div class="val" id="stPhotos">—</div></div>
+        <div class="stat"><div class="lbl">รถที่เข้า</div><div class="val" id="stTrucks">—</div></div>
+      </div>
+      <div class="card chartcard">
+        <h2>Trip ต่อวัน</h2>
+        <div class="bars" id="dayBars"><div class="empty">เลือกช่วงวันที่แล้วกดโหลดข้อมูล</div></div>
+      </div>
+      <div class="triplist" id="tripList"></div>
+    </div>
+
+    <!-- export -->
+    <div id="adm-exp" style="display:none">
+      <div class="card">
+        <h2>ดึงข้อมูลย้อนหลัง <span class="tag">EXPORT</span></h2>
+        <div class="tabs" style="margin:0 0 16px">
+          <div class="tab on" id="expSingle" onclick="expMode('single')">วันเดียว</div>
+          <div class="tab" id="expRange" onclick="expMode('range')">ช่วงวันที่</div>
+        </div>
+        <div class="fgroup"><label class="f">จากวันที่</label><input type="date" id="expFrom"></div>
+        <div class="fgroup" id="expToWrap" style="display:none"><label class="f">ถึงวันที่</label><input type="date" id="expTo"></div>
+        <div class="fgroup"><label class="f">Store (ไม่บังคับ)</label><select id="expStore"><option value="">ทุก Store</option></select></div>
+        <button class="btn btn-ghost" onclick="queryExport()">🔍 ค้นหาข้อมูล</button>
+        <div class="exp-summary" id="expSummary"></div>
+        <div class="dl-row" id="dlRow" style="display:none">
+          <button class="btn btn-amber" id="btnPdf" onclick="downloadPDF()">📄 ดาวน์โหลด PDF</button>
+          <button class="btn btn-teal" id="btnZip" onclick="downloadZIP()">🖼️ ดาวน์โหลด ZIP</button>
+        </div>
+        <div class="prog" id="expProg" style="margin-top:14px">
+          <div class="bar"><div class="fill" id="expFill"></div></div>
+          <div class="lbl"><span id="expText"></span><b id="expPct">0%</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- photo viewer -->
+<div class="modal" id="photoModal">
+  <div class="inner">
+    <div class="mhead"><h3 id="mTitle">รูปภาพ</h3><button onclick="closeModal()">✕</button></div>
+    <div class="mgrid" id="mGrid"></div>
+    <button class="btn btn-ghost btn-sm loadmore" id="btnMore" onclick="loadMorePhotos()" style="display:none">โหลดรูปเพิ่ม</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+var API_URL = 'https://script.google.com/macros/s/PASTE_YOUR_DEPLOYMENT_ID/exec';
+var CUTOFF_HOUR = 7;
+
+/* ================= STATE ================= */
+var S = {
+  role: null, name: '', adminToken: '',
+  photos: [],            // {name, blob, dataUrl}
+  truckSize: '',
+  stores: [],
+  exportTrips: [],
+  modalFolder: '', modalOffset: 0, modalTotal: 0
+};
+var THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+var THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+/* ================= API ================= */
+function api(payload) {
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function (r) { return r.json(); });
+}
+
+/* ================= CLOCK ================= */
+function tick() {
+  var n = new Date();
+  var h = n.getHours(), m = n.getMinutes(), s = n.getSeconds();
+  var pad = function (x) { return (x < 10 ? '0' : '') + x; };
+  document.getElementById('clkTime').innerHTML = pad(h) + ':' + pad(m) + '<span class="sec">:' + pad(s) + '</span>';
+  var isNight = h < CUTOFF_HOUR;
+  var biz = new Date(n.getTime() - (isNight ? 86400000 : 0));
+  var dateStr = 'วัน' + THAI_DAYS[n.getDay()] + ' ' + n.getDate() + ' ' + THAI_MONTHS[n.getMonth()] + ' ' + (n.getFullYear() + 543);
+  if (isNight) dateStr += ' · <span class="night">คืนวันที่ ' + biz.getDate() + '</span>';
+  document.getElementById('clkDate').innerHTML = dateStr;
+}
+setInterval(tick, 1000); tick();
+
+/* ================= TOAST ================= */
+var toastTimer;
+function toast(msg, bad) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (bad ? ' bad' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.className = 'toast'; }, 3200);
+}
+
+/* ================= VIEWS / LOGIN ================= */
+function show(id) {
+  document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('on'); });
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0, 0);
+}
+function showLoaderForm() {
+  document.getElementById('roleSelect').style.display = 'none';
+  document.getElementById('loaderForm').style.display = 'block';
+  document.getElementById('inLoaderName').focus();
+}
+function showAdminForm() {
+  document.getElementById('roleSelect').style.display = 'none';
+  document.getElementById('adminForm').style.display = 'block';
+}
+function backToRoles() {
+  document.getElementById('roleSelect').style.display = 'block';
+  document.getElementById('loaderForm').style.display = 'none';
+  document.getElementById('adminForm').style.display = 'none';
+}
+function enterApp() {
+  document.getElementById('clockbar').style.display = 'block';
+  document.getElementById('userchip').style.display = 'flex';
+  document.getElementById('whoName').textContent = S.name;
+  document.getElementById('roleLabel').textContent = S.role === 'admin' ? 'WAREHOUSE ADMIN' : 'LOADER';
+  loadStores();
+}
+function loginLoader() {
+  var name = document.getElementById('inLoaderName').value.trim();
+  if (!name) { toast('กรุณากรอกชื่อผู้โหลด', true); return; }
+  S.role = 'loader'; S.name = name;
+  sessionStorage.setItem('wfdc_sess', JSON.stringify({ role: 'loader', name: name }));
+  enterApp(); show('v-upload');
+}
+function loginAdmin() {
+  var pass = document.getElementById('inAdminPass').value;
+  var btn = document.getElementById('btnAdminLogin');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังตรวจสอบ...';
+  api({ action: 'adminLogin', password: pass }).then(function (res) {
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+    if (!res.ok) { document.getElementById('adminErr').classList.add('on'); return; }
+    document.getElementById('adminErr').classList.remove('on');
+    S.role = 'admin'; S.name = 'Warehouse Admin'; S.adminToken = res.token;
+    sessionStorage.setItem('wfdc_sess', JSON.stringify({ role: 'admin', name: S.name, token: res.token }));
+    document.getElementById('appShell').classList.add('wide');
+    enterApp(); show('v-admin'); initDashDates(); loadDashboard();
+  }).catch(function () { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; toast('เชื่อมต่อไม่สำเร็จ', true); });
+}
+function logout() {
+  sessionStorage.removeItem('wfdc_sess');
+  location.reload();
+}
+(function restore() {
+  try {
+    var sess = JSON.parse(sessionStorage.getItem('wfdc_sess') || 'null');
+    if (!sess) return;
+    S.role = sess.role; S.name = sess.name; S.adminToken = sess.token || '';
+    if (sess.role === 'admin') {
+      document.getElementById('appShell').classList.add('wide');
+      enterApp(); show('v-admin'); initDashDates(); loadDashboard();
+    } else { enterApp(); show('v-upload'); }
+  } catch (e) {}
+})();
+
+/* ================= STORES ================= */
+function loadStores() {
+  api({ action: 'getStores' }).then(function (res) {
+    if (!res.ok) return;
+    S.stores = res.stores;
+    var opts = '<option value="">— เลือก Store —</option>';
+    var eopts = '<option value="">ทุก Store</option>';
+    res.stores.forEach(function (st) {
+      var label = st.code + (st.name ? ' · ' + st.name : '');
+      opts += '<option value="' + st.code + '">' + label + '</option>';
+      eopts += '<option value="' + st.code + '">' + label + '</option>';
+    });
+    document.getElementById('fStore').innerHTML = opts;
+    document.getElementById('expStore').innerHTML = eopts;
+  });
+}
+
+/* ================= TRUCK TILES ================= */
+document.getElementById('truckTiles').addEventListener('click', function (e) {
+  var tile = e.target.closest('.truck');
+  if (!tile) return;
+  document.querySelectorAll('.truck').forEach(function (t) { t.classList.remove('sel'); });
+  tile.classList.add('sel');
+  S.truckSize = tile.dataset.v;
+});
+
+/* ================= PHOTOS: pick + compress ================= */
+document.getElementById('fileInput').addEventListener('change', function (e) {
+  handleFiles(e.target.files);
+  e.target.value = '';
+});
+var dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('hot'); });
+dz.addEventListener('dragleave', function () { dz.classList.remove('hot'); });
+dz.addEventListener('drop', function (e) { e.preventDefault(); dz.classList.remove('hot'); handleFiles(e.dataTransfer.files); });
+
+function handleFiles(fileList) {
+  var files = Array.prototype.slice.call(fileList).filter(function (f) { return f.type.indexOf('image') === 0; });
+  if (!files.length) return;
+  var room = 80 - S.photos.length;
+  if (files.length > room) { toast('เกินจำนวนสูงสุด — เพิ่มได้อีก ' + room + ' รูป', true); files = files.slice(0, room); }
+  var prog = document.getElementById('prog');
+  prog.classList.add('on');
+  var done = 0;
+  var chain = Promise.resolve();
+  files.forEach(function (f) {
+    chain = chain.then(function () {
+      return compressImage(f).then(function (out) {
+        S.photos.push(out);
+        addThumb(out);
+        done++;
+        setProg((done / files.length) * 100, 'กำลังย่อรูป ' + done + '/' + files.length);
+      });
+    });
+  });
+  chain.then(function () {
+    setProg(100, 'ย่อรูปเสร็จแล้ว');
+    setTimeout(function () { prog.classList.remove('on'); }, 900);
+    updatePhotoMeta();
+  });
+}
+
+function compressImage(file) {
+  return new Promise(function (resolve) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      var MAX = 1920;
+      var w = img.width, h = img.height;
+      if (Math.max(w, h) > MAX) {
+        var ratio = MAX / Math.max(w, h);
+        w = Math.round(w * ratio); h = Math.round(h * ratio);
+      }
+      var cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      var q = 0.85;
+      function attempt() {
+        cv.toBlob(function (blob) {
+          if (blob.size > 800 * 1024 && q > 0.4) { q -= 0.1; attempt(); }
+          else {
+            resolve({
+              name: 'IMG_' + Date.now() + '_' + Math.floor(Math.random() * 1000) + '.jpg',
+              blob: blob,
+              dataUrl: cv.toDataURL('image/jpeg', 0.4)
+            });
+          }
+        }, 'image/jpeg', q);
+      }
+      attempt();
+    };
+    img.src = url;
+  });
+}
+
+function addThumb(p) {
+  var d = document.createElement('div');
+  d.className = 'thumb';
+  d.innerHTML = '<img src="' + p.dataUrl + '"><button class="x">✕</button>';
+  d.querySelector('.x').onclick = function (e) {
+    e.stopPropagation();
+    S.photos = S.photos.filter(function (x) { return x !== p; });
+    d.remove(); updatePhotoMeta();
+  };
+  document.getElementById('thumbs').appendChild(d);
+}
+function updatePhotoMeta() {
+  document.getElementById('photoCount').textContent = S.photos.length;
+  document.getElementById('btnClearPhotos').style.display = S.photos.length ? 'block' : 'none';
+}
+function clearPhotos() {
+  S.photos = [];
+  document.getElementById('thumbs').innerHTML = '';
+  updatePhotoMeta();
+}
+function setProg(pct, txt) {
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = Math.round(pct) + '%';
+  document.getElementById('progText').textContent = txt;
+}
+
+/* ================= SUBMIT TRIP ================= */
+function blobToBase64(blob) {
+  return new Promise(function (resolve) {
+    var r = new FileReader();
+    r.onload = function () { resolve(r.result.split(',')[1]); };
+    r.readAsDataURL(blob);
+  });
+}
+
+function submitTrip() {
+  var plate = document.getElementById('fPlate').value.trim();
+  var manifest = document.getElementById('fManifest').value.trim();
+  var storeSel = document.getElementById('fStore');
+  var storeCode = storeSel.value;
+  var storeName = storeCode ? storeSel.options[storeSel.selectedIndex].text : '';
+  document.getElementById('manErr').classList.remove('on');
+
+  if (!plate) { toast('กรอกเลขทะเบียนรถก่อน', true); return; }
+  if (!manifest) { toast('กรอกเลข Manifest ก่อน', true); return; }
+  if (!S.truckSize) { toast('เลือกขนาดรถก่อน', true); return; }
+  if (!S.photos.length) { toast('เลือกรูปอย่างน้อย 1 รูป', true); return; }
+
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังสร้าง Trip...';
+  var prog = document.getElementById('prog');
+  prog.classList.add('on'); setProg(0, 'กำลังสร้าง Trip...');
+
+  api({
+    action: 'createTrip',
+    loader: S.name, plate: plate, manifest: manifest,
+    storeCode: storeCode, storeName: storeName, truckSize: S.truckSize + ' ล้อ'
+  }).then(function (res) {
+    if (!res.ok) {
+      btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+      prog.classList.remove('on');
+      if (res.error === 'MANIFEST_DUPLICATE') {
+        document.getElementById('manErr').classList.add('on');
+        toast('เลข Manifest ซ้ำ', true);
+      } else toast('เกิดข้อผิดพลาด: ' + res.error, true);
+      return;
+    }
+    uploadInBatches(res.folderId, res.tripId, res.time);
+  }).catch(function () {
+    btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+    prog.classList.remove('on');
+    toast('เชื่อมต่อ server ไม่ได้', true);
+  });
+}
+
+function uploadInBatches(folderId, tripId, serverTime) {
+  var BATCH = 5;
+  var total = S.photos.length;
+  var idx = 0;
+  var btn = document.getElementById('btnSubmit');
+
+  function next() {
+    if (idx >= total) {
+      setProg(100, 'กำลังปิด Trip...');
+      api({ action: 'finalizeTrip', tripId: tripId, photoCount: total }).then(function (res) {
+        btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+        showSuccess(serverTime, total);
+      });
+      return;
+    }
+    var batch = S.photos.slice(idx, idx + BATCH);
+    Promise.all(batch.map(function (p) {
+      return blobToBase64(p.blob).then(function (b64) { return { name: p.name, data: b64 }; });
+    })).then(function (payloadPhotos) {
+      return api({ action: 'uploadBatch', folderId: folderId, photos: payloadPhotos });
+    }).then(function (res) {
+      if (!res.ok) throw new Error(res.error);
+      idx += batch.length;
+      var pct = (idx / total) * 95;
+      setProg(pct, 'อัพโหลดรูป ' + idx + '/' + total);
+      btn.innerHTML = '<span class="spin"></span> อัพโหลด ' + idx + '/' + total;
+      next();
+    }).catch(function () {
+      toast('อัพโหลดสะดุด — กำลังลองใหม่...', true);
+      setTimeout(next, 2500);
+    });
+  }
+  next();
+}
+
+function showSuccess(serverTime, count) {
+  var meta = document.getElementById('successMeta');
+  var storeSel = document.getElementById('fStore');
+  meta.innerHTML =
+    '<div><span>เวลาบันทึก (ระบบ)</span><b>' + (serverTime ? serverTime.displayTime : '-') + '</b></div>' +
+    '<div><span>Manifest</span><b>' + document.getElementById('fManifest').value.trim() + '</b></div>' +
+    '<div><span>ทะเบียน</span><b>' + document.getElementById('fPlate').value.trim() + '</b></div>' +
+    '<div><span>Store</span><b>' + (storeSel.value ? storeSel.options[storeSel.selectedIndex].text : '-') + '</b></div>' +
+    '<div><span>ขนาดรถ</span><b>' + S.truckSize + ' ล้อ</b></div>' +
+    '<div><span>จำนวนรูป</span><b>' + count + ' รูป</b></div>';
+  show('v-success');
+}
+function resetUpload() {
+  document.getElementById('fPlate').value = '';
+  document.getElementById('fManifest').value = '';
+  document.getElementById('fStore').value = '';
+  document.querySelectorAll('.truck').forEach(function (t) { t.classList.remove('sel'); });
+  S.truckSize = '';
+  clearPhotos();
+  document.getElementById('prog').classList.remove('on');
+  show(S.role === 'admin' ? 'v-admin' : 'v-upload');
+  if (S.role === 'admin') adminTab('up');
+}
+
+/* ================= ADMIN: TABS ================= */
+function adminTab(which) {
+  ['dash', 'exp'].forEach(function (k) {
+    document.getElementById('adm-' + k).style.display = 'none';
+  });
+  document.getElementById('tabDash').classList.remove('on');
+  document.getElementById('tabExp').classList.remove('on');
+  document.getElementById('tabUp').classList.remove('on');
+  if (which === 'up') {
+    document.getElementById('tabUp').classList.add('on');
+    show('v-upload');
+    return;
+  }
+  show('v-admin');
+  document.getElementById('adm-' + which).style.display = 'block';
+  document.getElementById(which === 'dash' ? 'tabDash' : 'tabExp').classList.add('on');
+}
+
+/* ================= ADMIN: DASHBOARD ================= */
+function fmtDate(d) { return d.toISOString().slice(0, 10); }
+function initDashDates() {
+  var today = new Date();
+  var week = new Date(today.getTime() - 6 * 86400000);
+  document.getElementById('dashFrom').value = fmtDate(week);
+  document.getElementById('dashTo').value = fmtDate(today);
+  document.getElementById('expFrom').value = fmtDate(today);
+  document.getElementById('expTo').value = fmtDate(today);
+}
+function loadDashboard() {
+  var from = document.getElementById('dashFrom').value;
+  var to = document.getElementById('dashTo').value;
+  document.getElementById('dayBars').innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span></div>';
+  api({ action: 'getDashboard', token: S.adminToken, from: from, to: to }).then(function (res) {
+    if (!res.ok) {
+      if (res.error === 'UNAUTHORIZED') { toast('Session หมดอายุ — เข้าสู่ระบบใหม่', true); logout(); }
+      return;
+    }
+    document.getElementById('stTrips').textContent = res.summary.trips;
+    document.getElementById('stPhotos').textContent = res.summary.photos.toLocaleString();
+    document.getElementById('stTrucks').textContent = res.summary.trucks;
+    renderBars(res.perDay, from, to);
+    renderTrips(res.trips);
+  });
+}
+function renderBars(perDay, from, to) {
+  var wrap = document.getElementById('dayBars');
+  wrap.innerHTML = '';
+  var start = new Date(from), end = new Date(to);
+  var days = [];
+  for (var d = new Date(start); d <= end; d = new Date(d.getTime() + 86400000)) {
+    days.push(fmtDate(d));
+  }
+  if (days.length > 14) days = days.slice(-14);
+  var max = 1;
+  days.forEach(function (day) { max = Math.max(max, perDay[day] || 0); });
+  var todayBiz = businessToday();
+  days.forEach(function (day) {
+    var v = perDay[day] || 0;
+    var col = document.createElement('div');
+    col.className = 'barcol';
+    var dd = new Date(day);
+    col.innerHTML =
+      '<div class="b' + (day === todayBiz ? ' hot' : '') + '" style="height:0%">' + (v ? '<span class="v">' + v + '</span>' : '') + '</div>' +
+      '<div class="d">' + dd.getDate() + '/' + (dd.getMonth() + 1) + '</div>';
+    wrap.appendChild(col);
+    setTimeout(function () {
+      col.querySelector('.b').style.height = Math.max((v / max) * 100, v ? 8 : 2) + '%';
+    }, 60);
+  });
+}
+function businessToday() {
+  var n = new Date();
+  if (n.getHours() < CUTOFF_HOUR) n = new Date(n.getTime() - 86400000);
+  return fmtDate(n);
+}
+function renderTrips(trips) {
+  var wrap = document.getElementById('tripList');
+  if (!trips.length) { wrap.innerHTML = '<div class="empty">ไม่มี Trip ในช่วงที่เลือก</div>'; return; }
+  wrap.innerHTML = '';
+  trips.forEach(function (t, i) {
+    var isNight = t.displayTime.indexOf('คืนวันที่') >= 0;
+    var d = document.createElement('div');
+    d.className = 'trip';
+    d.style.animationDelay = Math.min(i * 0.03, 0.3) + 's';
+    d.innerHTML =
+      '<div class="t1">' + t.plate +
+        '<span class="badge">' + t.truckSize + '</span>' +
+        (isNight ? '<span class="badge night-b">🌙 กะดึก</span>' : '') +
+      '</div>' +
+      '<div class="t2">' + (t.storeName || t.storeCode || '-') + ' · ' + t.manifest + ' · ' + t.loader + '</div>' +
+      '<div class="right"><div class="time">' + t.displayTime + '</div><div class="ph">📷 ' + t.photoCount + ' รูป</div></div>';
+    d.onclick = function () { openPhotoModal(t); };
+    wrap.appendChild(d);
+  });
+}
+
+/* ================= PHOTO MODAL ================= */
+function openPhotoModal(t) {
+  S.modalFolder = t.folderId; S.modalOffset = 0; S.modalTotal = 0;
+  document.getElementById('mTitle').textContent = t.manifest + ' · ' + t.plate;
+  document.getElementById('mGrid').innerHTML = '';
+  document.getElementById('photoModal').classList.add('on');
+  loadMorePhotos();
+}
+function closeModal() { document.getElementById('photoModal').classList.remove('on'); }
+function loadMorePhotos() {
+  var btn = document.getElementById('btnMore');
+  btn.style.display = 'block'; btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังโหลด...';
+  api({ action: 'getTripPhotos', token: S.adminToken, folderId: S.modalFolder, offset: S.modalOffset, limit: 6 })
+    .then(function (res) {
+      btn.disabled = false; btn.textContent = 'โหลดรูปเพิ่ม';
+      if (!res.ok) { toast('โหลดรูปไม่สำเร็จ', true); return; }
+      S.modalTotal = res.total;
+      res.photos.forEach(function (p) {
+        var img = document.createElement('img');
+        img.src = 'data:image/jpeg;base64,' + p.data;
+        document.getElementById('mGrid').appendChild(img);
+      });
+      S.modalOffset += res.photos.length;
+      btn.style.display = S.modalOffset < S.modalTotal ? 'block' : 'none';
+    });
+}
+
+/* ================= EXPORT ================= */
+var expIsRange = false;
+function expMode(m) {
+  expIsRange = (m === 'range');
+  document.getElementById('expSingle').classList.toggle('on', !expIsRange);
+  document.getElementById('expRange').classList.toggle('on', expIsRange);
+  document.getElementById('expToWrap').style.display = expIsRange ? 'block' : 'none';
+}
+function queryExport() {
+  var from = document.getElementById('expFrom').value;
+  var to = expIsRange ? document.getElementById('expTo').value : from;
+  var store = document.getElementById('expStore').value;
+  if (!from) { toast('เลือกวันที่ก่อน', true); return; }
+  var sum = document.getElementById('expSummary');
+  sum.classList.add('on'); sum.innerHTML = '<span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> กำลังค้นหา...';
+  api({ action: 'getExportData', token: S.adminToken, from: from, to: to, storeCode: store })
+    .then(function (res) {
+      if (!res.ok) { sum.textContent = 'เกิดข้อผิดพลาด'; return; }
+      S.exportTrips = res.trips;
+      sum.innerHTML = 'พบ <b>' + res.trips.length + '</b> trip · <b>' + res.totalPhotos.toLocaleString() + '</b> รูป';
+      document.getElementById('dlRow').style.display = res.trips.length ? 'flex' : 'none';
+    });
+}
+function setExpProg(pct, txt) {
+  var p = document.getElementById('expProg');
+  p.classList.add('on');
+  document.getElementById('expFill').style.width = pct + '%';
+  document.getElementById('expPct').textContent = Math.round(pct) + '%';
+  document.getElementById('expText').textContent = txt;
+}
+function fetchAllPhotos(trip, onEach) {
+  var offset = 0;
+  function step() {
+    return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: offset, limit: 6 })
+      .then(function (res) {
+        if (!res.ok) return;
+        res.photos.forEach(onEach);
+        offset += res.photos.length;
+        if (offset < res.total && res.photos.length) return step();
+      });
+  }
+  return step();
+}
+
+function downloadPDF() {
+  var trips = S.exportTrips;
+  if (!trips.length) return;
+  var btn = document.getElementById('btnPdf');
+  btn.disabled = true;
+  var doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+  var W = 210, margin = 12;
+  var done = 0, totalPhotos = trips.reduce(function (s, t) { return s + t.photoCount; }, 0) || 1;
+  var first = true;
+
+  var chain = Promise.resolve();
+  trips.forEach(function (t) {
+    chain = chain.then(function () {
+      if (!first) doc.addPage(); first = false;
+      doc.setFillColor(20, 24, 34); doc.rect(0, 0, W, 26, 'F');
+      doc.setTextColor(255, 178, 36); doc.setFontSize(13);
+      doc.text('WFDC CONTAINER LOADING', margin, 10);
+      doc.setTextColor(230, 235, 245); doc.setFontSize(9);
+      doc.text('Manifest: ' + t.manifest + '   Plate: ' + t.plate + '   Truck: ' + t.truckSize, margin, 17);
+      doc.text('Date: ' + t.businessDate + '   Time: ' + t.displayTime.replace('คืนวันที่', 'Night of') + '   Store: ' + (t.storeCode || '-') + '   Loader: ' + t.loader, margin, 22);
+      var x = margin, y = 32, cw = (W - margin * 2 - 8) / 3, chh = cw * 0.75;
+      return fetchAllPhotos(t, function (p) {
+        if (y + chh > 285) { doc.addPage(); y = 15; x = margin; }
+        try { doc.addImage('data:image/jpeg;base64,' + p.data, 'JPEG', x, y, cw, chh); } catch (e) {}
+        x += cw + 4;
+        if (x + cw > W - margin) { x = margin; y += chh + 4; }
+        done++;
+        setExpProg((done / totalPhotos) * 100, 'สร้าง PDF · รูปที่ ' + done + '/' + totalPhotos);
+      });
+    });
+  });
+  chain.then(function () {
+    setExpProg(100, 'เสร็จแล้ว');
+    doc.save('WFDC_Loading_' + document.getElementById('expFrom').value + '.pdf');
+    btn.disabled = false;
+    toast('ดาวน์โหลด PDF เรียบร้อย');
+  });
+}
+
+function downloadZIP() {
+  var trips = S.exportTrips;
+  if (!trips.length) return;
+  var btn = document.getElementById('btnZip');
+  btn.disabled = true;
+  var zip = new JSZip();
+  var done = 0, totalPhotos = trips.reduce(function (s, t) { return s + t.photoCount; }, 0) || 1;
+  var chain = Promise.resolve();
+  trips.forEach(function (t) {
+    var folder = zip.folder(t.businessDate + '_' + t.manifest);
+    chain = chain.then(function () {
+      return fetchAllPhotos(t, function (p) {
+        folder.file(p.name, p.data, { base64: true });
+        done++;
+        setExpProg((done / totalPhotos) * 95, 'รวบรวมรูป ' + done + '/' + totalPhotos);
+      });
+    });
+  });
+  chain.then(function () {
+    setExpProg(97, 'กำลังบีบอัด ZIP...');
+    return zip.generateAsync({ type: 'blob' });
+  }).then(function (blob) {
+    setExpProg(100, 'เสร็จแล้ว');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'WFDC_Photos_' + document.getElementById('expFrom').value + '.zip';
+    a.click();
+    btn.disabled = false;
+    toast('ดาวน์โหลด ZIP เรียบร้อย');
+  });
+}
+</script>
+</body>
+</html>
