@@ -230,6 +230,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .exp-summary{background:var(--panel2);border-radius:11px;padding:13px 15px;font-size:14px;color:var(--sub);margin-top:14px;display:none}
 .exp-summary.on{display:block}
 .exp-summary b{color:var(--amber);font-family:'IBM Plex Mono',monospace}
+.selall{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:13px;color:var(--sub)}
+.selall label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;color:var(--txt)}
+.selall input,.exptrip input{width:19px;height:19px;accent-color:var(--amber);cursor:pointer;flex-shrink:0}
+.exptrip{
+  display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--line2);
+  border-radius:11px;padding:11px 13px;margin-top:8px;cursor:pointer;transition:border-color .15s;animation:rise .3s ease both;
+}
+.exptrip:hover{border-color:var(--amber-deep)}
+.exptrip.off{opacity:.45}
+.exptrip .info{flex:1;min-width:0}
+.exptrip .m{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exptrip .s{font-size:12px;color:var(--sub);margin-top:1px}
+.exptrip .ph{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sub);text-align:right;flex-shrink:0}
 .dl-row{display:flex;gap:10px;margin-top:14px}
 .dl-row .btn{flex:1}
 
@@ -329,6 +342,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- ============ VIEW: UPLOAD ============ -->
   <div class="view" id="v-upload">
+    <button class="btn btn-ghost btn-sm" id="btnBackAdmin" style="display:none;margin-top:16px" onclick="adminTab('dash')">← กลับ Dashboard</button>
     <div class="card">
       <h2>ข้อมูลเที่ยวขนส่ง <span class="tag">TRIP</span></h2>
       <div class="fgroup">
@@ -385,6 +399,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <h2>บันทึก Trip สำเร็จ</h2>
       <div class="meta" id="successMeta"></div>
       <button class="btn btn-amber" onclick="resetUpload()">＋ บันทึก Trip ถัดไป</button>
+      <button class="btn btn-ghost" id="btnSuccBack" style="margin-top:10px;display:none" onclick="resetUpload(); adminTab('dash')">กลับ Dashboard</button>
     </div>
   </div>
 
@@ -426,8 +441,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="fgroup"><label class="f">จากวันที่</label><input type="date" id="expFrom"></div>
         <div class="fgroup" id="expToWrap" style="display:none"><label class="f">ถึงวันที่</label><input type="date" id="expTo"></div>
         <div class="fgroup"><label class="f">Store (ไม่บังคับ)</label><select id="expStore"><option value="">ทุก Store</option></select></div>
+        <div class="fgroup">
+          <label class="f">ค้นหา ทะเบียนรถ / เลข Manifest (ไม่บังคับ)</label>
+          <input type="text" id="expSearch" placeholder="เช่น 82-1234 หรือ LM-2026..." autocomplete="off">
+          <div class="hint">ถ้ากรอกช่องนี้ ระบบจะค้นจากทุกวันที่ให้อัตโนมัติ</div>
+        </div>
         <button class="btn btn-ghost" onclick="queryExport()">🔍 ค้นหาข้อมูล</button>
         <div class="exp-summary" id="expSummary"></div>
+        <div class="selall" id="selAllRow" style="display:none">
+          <label><input type="checkbox" id="chkAll" checked onchange="toggleAllExp()"> เลือกทั้งหมด</label>
+          <span id="selCount"></span>
+        </div>
+        <div id="expList"></div>
         <div class="dl-row" id="dlRow" style="display:none">
           <button class="btn btn-amber" id="btnPdf" onclick="downloadPDF()">📄 ดาวน์โหลด PDF</button>
           <button class="btn btn-teal" id="btnZip" onclick="downloadZIP()">🖼️ ดาวน์โหลด ZIP</button>
@@ -544,6 +569,8 @@ function enterApp() {
   document.getElementById('userchip').style.display = 'flex';
   document.getElementById('whoName').textContent = S.name;
   document.getElementById('roleLabel').textContent = S.role === 'admin' ? 'WAREHOUSE ADMIN' : 'LOADER';
+  document.getElementById('btnBackAdmin').style.display = S.role === 'admin' ? 'inline-flex' : 'none';
+  document.getElementById('btnSuccBack').style.display = S.role === 'admin' ? 'flex' : 'none';
   loadStores();
 }
 function loginLoader() {
@@ -971,19 +998,81 @@ function expMode(m) {
   document.getElementById('expToWrap').style.display = expIsRange ? 'block' : 'none';
 }
 function queryExport() {
+  var search = document.getElementById('expSearch').value.trim();
   var from = document.getElementById('expFrom').value;
   var to = expIsRange ? document.getElementById('expTo').value : from;
   var store = document.getElementById('expStore').value;
-  if (!from) { toast('เลือกวันที่ก่อน', true); return; }
+  if (!search && !from) { toast('เลือกวันที่ หรือกรอกคำค้นหาก่อน', true); return; }
   var sum = document.getElementById('expSummary');
   sum.classList.add('on'); sum.innerHTML = '<span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> กำลังค้นหา...';
-  api({ action: 'getExportData', token: S.adminToken, from: from, to: to, storeCode: store })
+  document.getElementById('expList').innerHTML = '';
+  document.getElementById('selAllRow').style.display = 'none';
+  document.getElementById('dlRow').style.display = 'none';
+  api({ action: 'getExportData', token: S.adminToken, from: from, to: to, storeCode: store, search: search })
     .then(function (res) {
       if (!res.ok) { sum.textContent = 'เกิดข้อผิดพลาด'; return; }
       S.exportTrips = res.trips;
-      sum.innerHTML = 'พบ <b>' + res.trips.length + '</b> trip · <b>' + res.totalPhotos.toLocaleString() + '</b> รูป';
-      document.getElementById('dlRow').style.display = res.trips.length ? 'flex' : 'none';
+      if (!res.trips.length) {
+        sum.innerHTML = 'ไม่พบข้อมูล' + (search ? 'ที่ตรงกับ "' + search + '"' : 'ในช่วงที่เลือก');
+        return;
+      }
+      sum.innerHTML = 'พบ <b>' + res.trips.length + '</b> trip · <b>' + res.totalPhotos.toLocaleString() + '</b> รูป' + (search ? ' (ค้นหา: ' + search + ')' : '');
+      renderExpList(res.trips);
+      document.getElementById('selAllRow').style.display = 'flex';
+      document.getElementById('chkAll').checked = true;
+      document.getElementById('dlRow').style.display = 'flex';
+      updateSelCount();
     });
+}
+
+function renderExpList(trips) {
+  var wrap = document.getElementById('expList');
+  wrap.innerHTML = '';
+  trips.forEach(function (t, i) {
+    var isNight = t.displayTime.indexOf('คืนวันที่') >= 0;
+    var d = document.createElement('div');
+    d.className = 'exptrip';
+    d.style.animationDelay = Math.min(i * 0.03, 0.3) + 's';
+    d.innerHTML =
+      '<input type="checkbox" id="expchk' + i + '" checked>' +
+      '<div class="info">' +
+        '<div class="m">' + t.manifest + ' · ' + t.plate + (isNight ? ' 🌙' : '') + '</div>' +
+        '<div class="s">' + t.businessDate + ' · ' + t.displayTime + ' · ' + (t.storeName || t.storeCode || '-') + ' · ' + t.truckSize + ' · ' + t.loader + '</div>' +
+      '</div>' +
+      '<div class="ph">📷 ' + t.photoCount + '</div>';
+    var chk = d.querySelector('input');
+    d.onclick = function (e) {
+      if (e.target !== chk) chk.checked = !chk.checked;
+      d.classList.toggle('off', !chk.checked);
+      updateSelCount();
+    };
+    chk.onchange = function () { d.classList.toggle('off', !chk.checked); updateSelCount(); };
+    wrap.appendChild(d);
+  });
+}
+
+function toggleAllExp() {
+  var on = document.getElementById('chkAll').checked;
+  S.exportTrips.forEach(function (t, i) {
+    var chk = document.getElementById('expchk' + i);
+    if (chk) { chk.checked = on; chk.closest('.exptrip').classList.toggle('off', !on); }
+  });
+  updateSelCount();
+}
+
+function selectedExportTrips() {
+  return S.exportTrips.filter(function (t, i) {
+    var chk = document.getElementById('expchk' + i);
+    return chk && chk.checked;
+  });
+}
+
+function updateSelCount() {
+  var sel = selectedExportTrips();
+  var photos = sel.reduce(function (s, t) { return s + t.photoCount; }, 0);
+  document.getElementById('selCount').innerHTML = 'เลือก <b style="color:var(--amber)">' + sel.length + '</b> trip · ' + photos.toLocaleString() + ' รูป';
+  var allChk = document.getElementById('chkAll');
+  allChk.checked = sel.length === S.exportTrips.length && sel.length > 0;
 }
 function setExpProg(pct, txt) {
   var p = document.getElementById('expProg');
@@ -1007,8 +1096,8 @@ function fetchAllPhotos(trip, onEach) {
 }
 
 function downloadPDF() {
-  var trips = S.exportTrips;
-  if (!trips.length) return;
+  var trips = selectedExportTrips();
+  if (!trips.length) { toast('เลือกอย่างน้อย 1 trip ก่อน', true); return; }
   var btn = document.getElementById('btnPdf');
   btn.disabled = true;
   var doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
@@ -1046,8 +1135,8 @@ function downloadPDF() {
 }
 
 function downloadZIP() {
-  var trips = S.exportTrips;
-  if (!trips.length) return;
+  var trips = selectedExportTrips();
+  if (!trips.length) { toast('เลือกอย่างน้อย 1 trip ก่อน', true); return; }
   var btn = document.getElementById('btnZip');
   btn.disabled = true;
   var zip = new JSZip();
