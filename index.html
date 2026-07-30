@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --ink:#0B0E13; --panel:#131822; --panel2:#1A2130; --line:#242D3F; --line2:#313C52;
@@ -482,7 +481,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <script>
 /* ================= CONFIG ================= */
 var API_URL = 'https://script.google.com/macros/s/AKfycbwrHmXWRykZE3W2KsFHFs74XCWb_6gdKp_bTZw_PuRqsSS-r-HEu2FF0sZNvg8Os78R/exec';
-var CUTOFF_HOUR = 7;
+var CUTOFF_HOUR = 8;   // ค่าเริ่มต้น — ระบบ sync ค่าจริงจาก server อัตโนมัติ
+try { CUTOFF_HOUR = Number(localStorage.getItem('wfdc_cutoff')) || 8; } catch (e) {}
+function syncCutoff(time) {
+  if (time && time.cutoffHour && time.cutoffHour !== CUTOFF_HOUR) {
+    CUTOFF_HOUR = time.cutoffHour;
+    try { localStorage.setItem('wfdc_cutoff', String(CUTOFF_HOUR)); } catch (e) {}
+  }
+}
 
 /* ================= STATE ================= */
 var S = {
@@ -632,6 +638,7 @@ function loadStores(attempt) {
   attempt = attempt || 1;
   api({ action: 'getStores' }).then(function (res) {
     if (!res.ok || !res.stores) throw new Error('bad');
+    syncCutoff(res.time);
     renderStores(res.stores);
     try { localStorage.setItem('wfdc_stores', JSON.stringify(res.stores)); } catch (e) {}
   }).catch(function () {
@@ -1081,18 +1088,37 @@ function setExpProg(pct, txt) {
   document.getElementById('expPct').textContent = Math.round(pct) + '%';
   document.getElementById('expText').textContent = txt;
 }
-function fetchAllPhotos(trip, onEach) {
-  var offset = 0;
-  function step() {
-    return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: offset, limit: 6 })
-      .then(function (res) {
-        if (!res.ok) return;
-        res.photos.forEach(onEach);
-        offset += res.photos.length;
-        if (offset < res.total && res.photos.length) return step();
+function fetchAllPhotos(trip, onEach, onProgress) {
+  var LIMIT = 6, CONC = 3;
+  return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: 0, limit: LIMIT })
+    .then(function (first) {
+      if (!first.ok) return;
+      var total = first.total;
+      var results = { 0: first.photos };
+      var fetched = first.photos.length;
+      if (onProgress) onProgress(fetched, total);
+      var offsets = [];
+      for (var o = LIMIT; o < total; o += LIMIT) offsets.push(o);
+      var idx = 0;
+      function worker() {
+        if (idx >= offsets.length) return Promise.resolve();
+        var o = offsets[idx++];
+        return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: o, limit: LIMIT })
+          .then(function (res) {
+            if (res.ok) {
+              results[o] = res.photos;
+              fetched += res.photos.length;
+              if (onProgress) onProgress(fetched, total);
+            }
+            return worker();
+          }).catch(function () { return worker(); });
+      }
+      var workers = [];
+      for (var w = 0; w < CONC; w++) workers.push(worker());
+      return Promise.all(workers).then(function () {
+        for (var o = 0; o < total; o += LIMIT) (results[o] || []).forEach(onEach);
       });
-  }
-  return step();
+    });
 }
 
 function downloadPDF() {
@@ -1116,13 +1142,15 @@ function downloadPDF() {
       doc.text('Manifest: ' + t.manifest + '   Plate: ' + t.plate + '   Truck: ' + t.truckSize, margin, 17);
       doc.text('Date: ' + t.businessDate + '   Time: ' + t.displayTime.replace('คืนวันที่', 'Night of') + '   Store: ' + (t.storeCode || '-') + '   Loader: ' + t.loader, margin, 22);
       var x = margin, y = 32, cw = (W - margin * 2 - 8) / 3, chh = cw * 0.75;
+      var tripIdx = trips.indexOf(t) + 1;
       return fetchAllPhotos(t, function (p) {
         if (y + chh > 285) { doc.addPage(); y = 15; x = margin; }
         try { doc.addImage('data:image/jpeg;base64,' + p.data, 'JPEG', x, y, cw, chh); } catch (e) {}
         x += cw + 4;
         if (x + cw > W - margin) { x = margin; y += chh + 4; }
+      }, function (fetched, tot) {
         done++;
-        setExpProg((done / totalPhotos) * 100, 'สร้าง PDF · รูปที่ ' + done + '/' + totalPhotos);
+        setExpProg((done / totalPhotos) * 100, 'PDF trip ' + tripIdx + '/' + trips.length + ' · ดึงรูป ' + fetched + '/' + tot);
       });
     });
   });
@@ -1139,30 +1167,35 @@ function downloadZIP() {
   if (!trips.length) { toast('เลือกอย่างน้อย 1 trip ก่อน', true); return; }
   var btn = document.getElementById('btnZip');
   btn.disabled = true;
-  var zip = new JSZip();
-  var done = 0, totalPhotos = trips.reduce(function (s, t) { return s + t.photoCount; }, 0) || 1;
+  var done = 0;
   var chain = Promise.resolve();
   trips.forEach(function (t) {
-    var folder = zip.folder(t.businessDate + '_' + t.manifest);
     chain = chain.then(function () {
-      return fetchAllPhotos(t, function (p) {
-        folder.file(p.name, p.data, { base64: true });
+      setExpProg((done / trips.length) * 100, 'สร้าง ZIP บน server · trip ' + (done + 1) + '/' + trips.length + ' (' + t.manifest + ')');
+      return api({
+        action: 'makeTripZip', token: S.adminToken,
+        folderId: t.folderId, label: t.businessDate + '_' + t.manifest
+      }).then(function (res) {
+        if (!res.ok) { toast('ZIP ' + t.manifest + ' ไม่สำเร็จ: ' + res.error, true); return; }
+        res.links.forEach(function (lk, i) {
+          setTimeout(function () {
+            var a = document.createElement('a');
+            a.href = lk.url; a.download = lk.name;
+            document.body.appendChild(a); a.click(); a.remove();
+          }, i * 1200);
+        });
         done++;
-        setExpProg((done / totalPhotos) * 95, 'รวบรวมรูป ' + done + '/' + totalPhotos);
+        setExpProg((done / trips.length) * 100, 'เสร็จ ' + done + '/' + trips.length + ' trip');
       });
     });
   });
   chain.then(function () {
-    setExpProg(97, 'กำลังบีบอัด ZIP...');
-    return zip.generateAsync({ type: 'blob' });
-  }).then(function (blob) {
-    setExpProg(100, 'เสร็จแล้ว');
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'WFDC_Photos_' + document.getElementById('expFrom').value + '.zip';
-    a.click();
+    setExpProg(100, 'ส่งไฟล์ครบแล้ว — ดูแถบดาวน์โหลดของเบราว์เซอร์');
     btn.disabled = false;
-    toast('ดาวน์โหลด ZIP เรียบร้อย');
+    toast('สร้าง ZIP ครบ ' + done + ' trip');
+  }).catch(function () {
+    btn.disabled = false;
+    toast('เกิดข้อผิดพลาดระหว่างสร้าง ZIP', true);
   });
 }
 </script>
