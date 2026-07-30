@@ -1261,7 +1261,7 @@ function downloadZIP() {
   if (!trips.length) { toast('เลือกอย่างน้อย 1 trip ก่อน', true); return; }
   var btn = document.getElementById('btnZip');
   btn.disabled = true;
-  var done = 0;
+  var done = 0, fails = [];
   var chain = Promise.resolve();
   trips.forEach(function (t) {
     chain = chain.then(function () {
@@ -1270,7 +1270,7 @@ function downloadZIP() {
         action: 'makeTripZip', token: S.adminToken,
         folderId: t.folderId, label: t.businessDate + '_' + t.manifest
       }).then(function (res) {
-        if (!res.ok) { toast('ZIP ' + t.manifest + ' ไม่สำเร็จ: ' + res.error, true); return; }
+        if (!res.ok) { fails.push({ m: t.manifest, e: res.error || 'ไม่ทราบสาเหตุ', d: res.detail || '' }); return; }
         res.links.forEach(function (lk, i) {
           setTimeout(function () {
             var a = document.createElement('a');
@@ -1284,12 +1284,22 @@ function downloadZIP() {
     });
   });
   chain.then(function () {
-    setExpProg(100, 'ส่งไฟล์ครบแล้ว — ดูแถบดาวน์โหลดของเบราว์เซอร์');
     btn.disabled = false;
-    toast('สร้าง ZIP ครบ ' + done + ' trip');
+    if (fails.length) {
+      var f = fails[0];
+      var hint = '';
+      if (f.e === 'UNKNOWN_ACTION') hint = ' — GAS ยังเป็นเวอร์ชันเก่า: กด Deploy > Manage deployments > New version';
+      else if (f.e === 'UNAUTHORIZED') hint = ' — Session หมดอายุ ให้ logout แล้ว login ใหม่';
+      else if (f.e === 'SERVER_ERROR') hint = ' — ลองรัน setupSystem() ใน Apps Script อีกครั้ง (' + f.d + ')';
+      setExpProg(100, 'ล้มเหลว ' + fails.length + '/' + trips.length + ' trip · error: ' + f.e + hint);
+      toast('สร้าง ZIP ไม่สำเร็จ: ' + f.e, true);
+    } else {
+      setExpProg(100, 'ส่งไฟล์ครบแล้ว — ดูแถบดาวน์โหลดของเบราว์เซอร์');
+      toast('สร้าง ZIP ครบ ' + done + ' trip');
+    }
   }).catch(function () {
     btn.disabled = false;
-    toast('เกิดข้อผิดพลาดระหว่างสร้าง ZIP', true);
+    toast('เชื่อมต่อ server ไม่ได้', true);
   });
 }
 </script>
