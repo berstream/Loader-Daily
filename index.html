@@ -740,11 +740,7 @@ function compressImage(file) {
         cv.toBlob(function (blob) {
           if (blob.size > 800 * 1024 && qi < qualities.length - 1) { qi++; attempt(); }
           else {
-            resolve({
-              name: 'IMG_' + Date.now() + '_' + Math.floor(Math.random() * 1000) + '.jpg',
-              blob: blob,
-              dataUrl: cv.toDataURL('image/jpeg', 0.4)
-            });
+            resolve({ blob: blob, dataUrl: cv.toDataURL('image/jpeg', 0.4) });
           }
         }, 'image/jpeg', qualities[qi]);
       }
@@ -834,6 +830,7 @@ function uploadInBatches(folderId, tripId, serverTime) {
   var total = S.photos.length;
   var idx = 0;
   var btn = document.getElementById('btnSubmit');
+  function pad3(n) { return ('00' + n).slice(-3); }
 
   function next() {
     if (idx >= total) {
@@ -845,8 +842,12 @@ function uploadInBatches(folderId, tripId, serverTime) {
       return;
     }
     var batch = S.photos.slice(idx, idx + BATCH);
-    Promise.all(batch.map(function (p) {
-      return blobToBase64(p.blob).then(function (b64) { return { name: p.name, data: b64 }; });
+    var base = idx;
+    Promise.all(batch.map(function (p, k) {
+      return blobToBase64(p.blob).then(function (b64) {
+        // ชื่อผูกกับ TripID + ลำดับรูป — retry ส่งซ้ำได้ปลอดภัย server เขียนทับตัวเดิม
+        return { name: tripId + '_' + pad3(base + k + 1) + '.jpg', data: b64 };
+      });
     })).then(function (payloadPhotos) {
       return api({ action: 'uploadBatch', folderId: folderId, photos: payloadPhotos });
     }).then(function (res) {
