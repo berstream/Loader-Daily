@@ -209,6 +209,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .filters{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
 .filters>*{flex:1;min-width:140px}
 
+/* top stores ranking */
+.hrow{display:flex;align-items:center;gap:10px;margin:8px 0;animation:rise .35s ease both}
+.hrow .rk{flex:0 0 22px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);text-align:center}
+.hrow:first-child .rk{color:var(--amber);font-weight:600}
+.hrow .nm{flex:0 0 34%;font-size:12.5px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.hrow .track{flex:1;height:16px;background:var(--panel2);border-radius:5px;overflow:hidden}
+.hrow .fillb{height:100%;background:linear-gradient(90deg,var(--amber-deep),var(--amber));border-radius:5px;width:0;transition:width .55s cubic-bezier(.34,1.2,.64,1)}
+.hrow .ct{flex:0 0 34px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--amber);font-weight:600;text-align:right}
+.listhead{font-size:14px;font-weight:600;margin:20px 4px 0;color:var(--txt)}
 /* trip table */
 .triplist{margin-top:16px}
 .trip{
@@ -250,8 +259,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .modal.on{display:block}
 .modal .inner{max-width:720px;margin:0 auto}
 .modal .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;position:sticky;top:0;background:rgba(5,7,10,.92);padding:8px 0;z-index:2}
-.modal .mhead h3{font-size:16px}
-.modal .mhead button{background:var(--panel);border:1px solid var(--line2);color:var(--txt);width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer}
+.modal .mhead h3{font-size:16px;color:#E8ECF4}
+.modal .mhead button{background:#1A2130;border:1px solid #313C52;color:#E8ECF4;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer}
+.modal .loadmore{color:#E8ECF4;border-color:#4A5670;background:transparent}
 .mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .mgrid img{width:100%;border-radius:10px;display:block;background:var(--panel)}
 .loadmore{margin:16px auto;display:block}
@@ -426,6 +436,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <h2>Trip ต่อวัน</h2>
         <div class="bars" id="dayBars"><div class="empty">เลือกช่วงวันที่แล้วกดโหลดข้อมูล</div></div>
       </div>
+      <div class="card">
+        <h2>สาขาที่มี Trip มากที่สุด <span class="tag">TOP 10</span></h2>
+        <div id="topStores"><div class="empty">ยังไม่มีข้อมูล</div></div>
+      </div>
+      <p class="listhead">Trip ล่าสุด</p>
       <div class="triplist" id="tripList"></div>
     </div>
 
@@ -914,7 +929,34 @@ function loadDashboard() {
     document.getElementById('stPhotos').textContent = res.summary.photos.toLocaleString();
     document.getElementById('stTrucks').textContent = res.summary.trucks;
     renderBars(res.perDay, from, to);
+    renderTopStores(res.perStore);
     renderTrips(res.trips);
+  });
+}
+function renderTopStores(perStore) {
+  var wrap = document.getElementById('topStores');
+  var entries = Object.keys(perStore || {}).map(function (k) { return { code: k, n: perStore[k] }; });
+  if (!entries.length) { wrap.innerHTML = '<div class="empty">ไม่มีข้อมูลในช่วงที่เลือก</div>'; return; }
+  entries.sort(function (a, b) { return b.n - a.n; });
+  entries = entries.slice(0, 10);
+  var max = entries[0].n || 1;
+  var nameOf = {};
+  S.stores.forEach(function (st) { nameOf[st.code] = st.name; });
+  wrap.innerHTML = '';
+  entries.forEach(function (e, i) {
+    var label = nameOf[e.code] ? e.code + ' · ' + nameOf[e.code] : e.code;
+    var row = document.createElement('div');
+    row.className = 'hrow';
+    row.style.animationDelay = (i * 0.04) + 's';
+    row.innerHTML =
+      '<span class="rk">' + (i + 1) + '</span>' +
+      '<span class="nm" title="' + label + '">' + label + '</span>' +
+      '<div class="track"><div class="fillb"></div></div>' +
+      '<span class="ct">' + e.n + '</span>';
+    wrap.appendChild(row);
+    setTimeout(function () {
+      row.querySelector('.fillb').style.width = Math.max((e.n / max) * 100, 4) + '%';
+    }, 80);
   });
 }
 function renderBars(perDay, from, to) {
@@ -1121,36 +1163,85 @@ function fetchAllPhotos(trip, onEach, onProgress) {
     });
 }
 
+/* วาด header ของ trip เป็นภาพผ่าน Canvas — ภาษาไทยเรนเดอร์สมบูรณ์โดยเบราว์เซอร์ */
+function makeHeaderImage(t) {
+  var scale = 3;
+  var cv = document.createElement('canvas');
+  cv.width = 210 * scale * 2; cv.height = 27 * scale * 2;
+  var c = cv.getContext('2d');
+  var u = scale * 2;
+  c.fillStyle = '#141822';
+  c.fillRect(0, 0, cv.width, cv.height);
+  c.fillStyle = '#FFB224';
+  c.font = '600 ' + (5.2 * u) + 'px "IBM Plex Sans Thai", sans-serif';
+  c.fillText('WFDC CONTAINER LOADING', 10 * u, 8.5 * u);
+  c.fillStyle = '#E8ECF4';
+  c.font = '400 ' + (3.6 * u) + 'px "IBM Plex Sans Thai", sans-serif';
+  c.fillText('Manifest: ' + t.manifest + '    ทะเบียน: ' + t.plate + '    รถ: ' + t.truckSize, 10 * u, 15.5 * u);
+  c.fillText('วันที่: ' + t.businessDate + '    เวลา: ' + t.displayTime + '    Store: ' + (t.storeName || t.storeCode || '-') + '    ผู้โหลด: ' + t.loader, 10 * u, 21.5 * u);
+  return cv.toDataURL('image/jpeg', 0.92);
+}
+
+/* หา width/height จริงของรูปจาก base64 */
+function imgDims(dataUrl) {
+  return new Promise(function (resolve) {
+    var img = new Image();
+    img.onload = function () { resolve({ w: img.width, h: img.height }); };
+    img.onerror = function () { resolve({ w: 4, h: 3 }); };
+    img.src = dataUrl;
+  });
+}
+
 function downloadPDF() {
   var trips = selectedExportTrips();
   if (!trips.length) { toast('เลือกอย่างน้อย 1 trip ก่อน', true); return; }
   var btn = document.getElementById('btnPdf');
   btn.disabled = true;
   var doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
-  var W = 210, margin = 12;
-  var done = 0, totalPhotos = trips.reduce(function (s, t) { return s + t.photoCount; }, 0) || 1;
+  var W = 210, PAGE_BOTTOM = 287, margin = 10, gap = 4;
+  var colW = (W - margin * 2 - gap) / 2;   // 2 คอลัมน์เต็มหน้ากระดาษ
+  var MAX_H = 150;                          // กันรูปตั้งยาวกินทั้งหน้า
   var first = true;
 
   var chain = Promise.resolve();
-  trips.forEach(function (t) {
+  trips.forEach(function (t, ti) {
     chain = chain.then(function () {
       if (!first) doc.addPage(); first = false;
-      doc.setFillColor(20, 24, 34); doc.rect(0, 0, W, 26, 'F');
-      doc.setTextColor(255, 178, 36); doc.setFontSize(13);
-      doc.text('WFDC CONTAINER LOADING', margin, 10);
-      doc.setTextColor(230, 235, 245); doc.setFontSize(9);
-      doc.text('Manifest: ' + t.manifest + '   Plate: ' + t.plate + '   Truck: ' + t.truckSize, margin, 17);
-      doc.text('Date: ' + t.businessDate + '   Time: ' + t.displayTime.replace('คืนวันที่', 'Night of') + '   Store: ' + (t.storeCode || '-') + '   Loader: ' + t.loader, margin, 22);
-      var x = margin, y = 32, cw = (W - margin * 2 - 8) / 3, chh = cw * 0.75;
-      var tripIdx = trips.indexOf(t) + 1;
-      return fetchAllPhotos(t, function (p) {
-        if (y + chh > 285) { doc.addPage(); y = 15; x = margin; }
-        try { doc.addImage('data:image/jpeg;base64,' + p.data, 'JPEG', x, y, cw, chh); } catch (e) {}
-        x += cw + 4;
-        if (x + cw > W - margin) { x = margin; y += chh + 4; }
-      }, function (fetched, tot) {
-        done++;
-        setExpProg((done / totalPhotos) * 100, 'PDF trip ' + tripIdx + '/' + trips.length + ' · ดึงรูป ' + fetched + '/' + tot);
+      doc.addImage(makeHeaderImage(t), 'JPEG', 0, 0, W, 27);
+      var photos = [];
+      return fetchAllPhotos(t, function (p) { photos.push(p); },
+        function (fetched, tot) {
+          setExpProg(((ti + fetched / (tot || 1)) / trips.length) * 90,
+            'PDF trip ' + (ti + 1) + '/' + trips.length + ' · ดึงรูป ' + fetched + '/' + tot);
+        }
+      ).then(function () {
+        // จัดวางทีละแถว แถวละ 2 รูป สูงตามสัดส่วนจริงของรูป
+        var y = 31, i = 0;
+        function placeRow() {
+          if (i >= photos.length) return Promise.resolve();
+          var pair = photos.slice(i, i + 2);
+          return Promise.all(pair.map(function (p) {
+            return imgDims('data:image/jpeg;base64,' + p.data);
+          })).then(function (dims) {
+            var heights = dims.map(function (d) {
+              return Math.min(colW * (d.h / d.w), MAX_H);
+            });
+            var rowH = Math.max.apply(null, heights);
+            if (y + rowH > PAGE_BOTTOM) { doc.addPage(); y = 12; }
+            pair.forEach(function (p, k) {
+              var x = margin + k * (colW + gap);
+              try {
+                doc.addImage('data:image/jpeg;base64,' + p.data, 'JPEG', x, y, colW, heights[k]);
+              } catch (e) {}
+            });
+            y += rowH + gap;
+            i += 2;
+            return placeRow();
+          });
+        }
+        return placeRow().then(function () {
+          setExpProg(((ti + 1) / trips.length) * 95, 'จัดหน้า trip ' + (ti + 1) + '/' + trips.length + ' เสร็จ');
+        });
       });
     });
   });
@@ -1159,6 +1250,9 @@ function downloadPDF() {
     doc.save('WFDC_Loading_' + document.getElementById('expFrom').value + '.pdf');
     btn.disabled = false;
     toast('ดาวน์โหลด PDF เรียบร้อย');
+  }).catch(function () {
+    btn.disabled = false;
+    toast('เกิดข้อผิดพลาดระหว่างสร้าง PDF', true);
   });
 }
 
