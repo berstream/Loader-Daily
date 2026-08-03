@@ -223,6 +223,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .pe-fields{display:flex;gap:10px;margin-bottom:10px}
 .pe-fields>div{flex:1}
 .pe-fields .f{margin-bottom:4px}
+.planhint{margin-top:9px;font-size:11.5px;color:var(--teal);background:var(--teal-bg);border:1px solid rgba(45,212,167,.3);border-radius:8px;padding:7px 10px;line-height:1.5}
 /* dual bars */
 .barlegend{font-size:12px;color:var(--sub);margin-bottom:10px}
 .barlegend .lg{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin:0 4px 0 8px}
@@ -495,7 +496,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <div><label class="f">แผน Out</label><input type="number" id="planOut" min="0" placeholder="0"></div>
               <div><label class="f">แผน In</label><input type="number" id="planIn" min="0" placeholder="0"></div>
             </div>
-            <button class="btn btn-amber btn-sm" style="width:100%" onclick="savePlan()">💾 บันทึกแผน</button>
+            <button class="btn btn-amber btn-sm" id="btnSavePlan" style="width:100%" onclick="savePlan()">💾 บันทึกแผน</button>
+            <div class="planhint" id="planHint" style="display:none">✅ บันทึกแล้ว — ตั้งแผนวันอื่นต่อได้ เสร็จแล้วกด <b>🔄 โหลดข้อมูล</b> ด้านบนเพื่อแสดงผลรวม</div>
           </div>
         </div>
       </div>
@@ -1045,6 +1047,7 @@ function switchDir(dir) {
 function loadDashboard() {
   var from = document.getElementById('dashFrom').value;
   var to = document.getElementById('dashTo').value;
+  var ph = document.getElementById('planHint'); if (ph) ph.style.display = 'none';
   document.getElementById('dayBars').innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span></div>';
   api({ action: 'getDashboard', token: S.adminToken, dir: S.dir, from: from, to: to }).then(function (res) {
     if (!res.ok) {
@@ -1155,10 +1158,16 @@ function savePlan() {
   if (!date) { toast('เลือกวันที่ก่อน', true); return; }
   var planIn = Number(document.getElementById('planIn').value) || 0;
   var planOut = Number(document.getElementById('planOut').value) || 0;
+  var btn = document.getElementById('btnSavePlan');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
   api({ action: 'savePlan', token: S.adminToken, date: date, planIn: planIn, planOut: planOut }).then(function (res) {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึกแผน'; }
     if (!res.ok) { toast('บันทึกแผนไม่สำเร็จ', true); return; }
-    toast('บันทึกแผนวันที่ ' + date + ' แล้ว');
-    loadDashboard();
+    toast('บันทึกแผน ' + date + ' แล้ว · ตั้งวันอื่นต่อได้ แล้วกด 🔄 โหลดข้อมูล');
+    document.getElementById('planHint').style.display = 'block';
+  }).catch(function () {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึกแผน'; }
+    toast('เชื่อมต่อ server ไม่ได้', true);
   });
 }
 
