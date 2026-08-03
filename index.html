@@ -387,6 +387,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <!-- ============ VIEW: UPLOAD ============ -->
   <div class="view" id="v-upload">
     <button class="btn btn-ghost btn-sm" id="btnBackAdmin" style="display:none;margin-top:16px" onclick="adminTab('dash')">← กลับ Dashboard</button>
+    <div class="dirtoggle" id="upDirToggle" style="display:none;margin-top:16px">
+      <div class="dtab on" id="upDirOut" onclick="switchUploadDir('out')">📤 อัพโหลดขาออก</div>
+      <div class="dtab" id="upDirIn" onclick="switchUploadDir('in')">📥 อัพโหลดขาเข้า</div>
+    </div>
     <div class="card">
       <h2 id="tripCardTitle">ข้อมูลเที่ยวขนส่ง <span class="tag" id="tripCardTag">TRIP</span></h2>
       <div class="fgroup">
@@ -1013,12 +1017,35 @@ function adminTab(which) {
   document.getElementById('tabUp').classList.remove('on');
   if (which === 'up') {
     document.getElementById('tabUp').classList.add('on');
+    // Admin สลับขาอัพโหลดได้
+    document.getElementById('upDirToggle').style.display = 'flex';
+    document.getElementById('upDirOut').classList.toggle('on', S.dir === 'out');
+    document.getElementById('upDirIn').classList.toggle('on', S.dir === 'in');
+    applyUploadForm();
     show('v-upload');
     return;
   }
   show('v-admin');
   document.getElementById('adm-' + which).style.display = 'block';
   document.getElementById(which === 'dash' ? 'tabDash' : 'tabExp').classList.add('on');
+}
+
+function switchUploadDir(dir) {
+  if (S.dir === dir) return;
+  S.dir = dir;
+  document.getElementById('upDirOut').classList.toggle('on', dir === 'out');
+  document.getElementById('upDirIn').classList.toggle('on', dir === 'in');
+  document.getElementById('roleLabel').textContent = DIRCFG[dir].userLabel;
+  // เคลียร์ฟอร์มกันข้อมูลขาเก่าปนขาใหม่
+  document.getElementById('fPlate').value = '';
+  document.getElementById('fManifest').value = '';
+  document.getElementById('fStore').value = '';
+  document.getElementById('fSupplier').value = '';
+  document.querySelectorAll('.truck').forEach(function (t) { t.classList.remove('sel'); });
+  S.truckSize = '';
+  clearPhotos();
+  document.getElementById('manErr').classList.remove('on');
+  applyUploadForm();
 }
 
 /* ================= ADMIN: DASHBOARD ================= */
