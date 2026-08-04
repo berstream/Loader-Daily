@@ -608,12 +608,29 @@ var THAI_DAYS = ['อาทิตย์','จันทร์','อังคา�
 var THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 /* ================= API ================= */
-function api(payload) {
-  return fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  }).then(function (r) { return r.json(); });
+function api(payload, opt) {
+  opt = opt || {};
+  var timeoutMs = opt.timeout || 30000;
+  var retries = opt.retries != null ? opt.retries : 0;
+  function attempt(left) {
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, timeoutMs);
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function (r) { clearTimeout(timer); return r.json(); })
+      .catch(function (err) {
+        clearTimeout(timer);
+        if (left > 0) {
+          var wait = (opt.backoff || 2000) * Math.pow(2, (opt.retries - left));  // 2s,4s,8s
+          return new Promise(function (res) { setTimeout(res, wait); }).then(function () { return attempt(left - 1); });
+        }
+        throw err;
+      });
+  }
+  return attempt(retries);
 }
 
 /* ================= CLOCK ================= */
@@ -937,57 +954,52 @@ function submitTrip() {
 }
 
 function uploadInBatches(folderId, tripId, serverTime) {
-  var BATCH = 5;         // รูปต่อ request
-  var PARALLEL = 2;      // จำนวน request พร้อมกัน (สมดุลเร็ว/เสถียรบนมือถือ)
+  var BATCH = 3;          // ก้อนละ 3 รูป — payload เบา GAS ไม่ timeout
   var total = S.photos.length;
   var btn = document.getElementById('btnSubmit');
   function pad3(n) { return ('00' + n).slice(-3); }
 
-  // แบ่งเป็นก้อนๆ ละ BATCH รูป
   var batches = [];
   for (var i = 0; i < total; i += BATCH) batches.push({ start: i, items: S.photos.slice(i, i + BATCH) });
 
-  var uploaded = 0, bi = 0, active = 0, failed = false, done = false;
+  var bi = 0, uploaded = 0;
 
-  function sendBatch(b) {
-    return Promise.all(b.items.map(function (p, k) {
+  function sendNext() {
+    if (bi >= batches.length) {
+      setProg(100, 'กำลังปิด Trip...');
+      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, photoCount: total }, { retries: 3, timeout: 30000 })
+        .then(function () {
+          btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+          showSuccess(serverTime, total);
+        }).catch(function () {
+          btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+          toast('ปิด Trip ไม่สำเร็จ — ลองกดบันทึกอีกครั้ง (รูปที่อัพไปแล้วไม่หาย)', true);
+        });
+      return;
+    }
+    var b = batches[bi];
+    Promise.all(b.items.map(function (p, k) {
       return blobToBase64(p.blob).then(function (b64) {
-        return { name: tripId + '_' + pad3(b.start + k + 1) + '.jpg', data: b64 };  // deterministic + upsert = ส่งซ้ำ/ขนานปลอดภัย
+        return { name: tripId + '_' + pad3(b.start + k + 1) + '.jpg', data: b64 };  // deterministic + upsert = retry ปลอดภัย
       });
     })).then(function (payloadPhotos) {
-      return api({ action: 'uploadBatch', folderId: folderId, photos: payloadPhotos });
+      // retry อัตโนมัติ 3 ครั้งถอยเวลา 2->4->8 วิ + timeout 30 วิ/ครั้ง
+      return api({ action: 'uploadBatch', folderId: folderId, photos: payloadPhotos }, { retries: 3, timeout: 30000 });
     }).then(function (res) {
       if (!res.ok) throw new Error(res.error || 'batch fail');
-      uploaded += b.items.length;
+      uploaded += b.items.length; bi++;
       var pct = (uploaded / total) * 95;
       setProg(pct, 'อัพโหลดรูป ' + uploaded + '/' + total);
       btn.innerHTML = '<span class="spin"></span> อัพโหลด ' + uploaded + '/' + total;
+      sendNext();
+    }).catch(function () {
+      // หมด retry แล้วยังไม่ได้ — หยุดแบบไม่ปิด trip ให้ผู้ใช้กดบันทึกซ้ำ (idempotent อัพต่อจากเดิมได้)
+      btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+      setProg((uploaded / total) * 95, 'อัพโหลดสะดุดที่รูป ' + uploaded + '/' + total + ' — กดบันทึกอีกครั้งเพื่ออัพต่อ');
+      toast('อัพโหลดไม่สำเร็จ — กดบันทึกอีกครั้ง (รูปที่อัพแล้วไม่ต้องอัพซ้ำ)', true);
     });
   }
-
-  function pump() {
-    if (done) return;
-    // เติมคิวให้ครบ PARALLEL
-    while (active < PARALLEL && bi < batches.length && !failed) {
-      var b = batches[bi++]; active++;
-      sendBatch(b).then(function () {
-        active--; pump();
-      }).catch(function () {
-        active--; bi--;           // คืนก้อนที่พลาดกลับคิว retry
-        if (!failed) { failed = true; toast('อัพโหลดสะดุด — กำลังลองใหม่...', true); setTimeout(function () { failed = false; pump(); }, 2500); }
-      });
-    }
-    // เสร็จครบทุกก้อน
-    if (uploaded >= total && !done) {
-      done = true;
-      setProg(100, 'กำลังปิด Trip...');
-      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, photoCount: total }).then(function () {
-        btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
-        showSuccess(serverTime, total);
-      });
-    }
-  }
-  pump();
+  sendNext();
 }
 
 function showSuccess(serverTime, count) {
@@ -1064,6 +1076,8 @@ function switchUploadDir(dir) {
 
 /* ================= ADMIN: DASHBOARD ================= */
 function fmtDate(d) { return d.toISOString().slice(0, 10); }
+function fmtLocal(d) { var m = d.getMonth() + 1, day = d.getDate(); return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day; }
+function parseYMD(s) { var p = String(s).split('-'); return new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1); }
 function initDashDates() {
   var today = new Date();
   var week = new Date(today.getTime() - 6 * 86400000);
@@ -1100,15 +1114,27 @@ function loadDashboard(force) {
     document.getElementById('stPhotos').textContent = res.summary.photos.toLocaleString();
     document.getElementById('stTrucks').textContent = res.summary.trucks;
     renderDonut(res.summary.trips, res.planTotal || 0);
-    renderBars2(res.perDay, res.perDayPlan || {}, from, to);
-    renderTopStores(res.perParty);
-    renderTrips(res.trips);
-    // เติมช่องแผนจากข้อมูลชุดเดียวกัน ไม่ต้องยิง getPlan อีกรอบ
+    renderBars2(res.perDay, res.perDayPlan || {}, to);
+    renderTopStores(res.topParty || []);
     if (res.planForDate) {
       document.getElementById('planIn').value = res.planForDate.planIn || '';
       document.getElementById('planOut').value = res.planForDate.planOut || '';
     }
+    // รายการ trip โหลดแยกทีหลัง ไม่ถ่วงกราฟให้ขึ้นช้า
+    loadRecentTrips(from, to, force);
+  }).catch(function () {
+    document.getElementById('dayBars').innerHTML = '<div class="empty">โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่</div>';
+    toast('โหลด Dashboard ไม่สำเร็จ', true);
   });
+}
+function loadRecentTrips(from, to, force) {
+  var wrap = document.getElementById('tripList');
+  wrap.innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> กำลังโหลดรายการ...</div>';
+  api({ action: 'getRecentTrips', token: S.adminToken, dir: S.dir, from: from, to: to, limit: 30 }, { retries: 2 })
+    .then(function (res) {
+      if (!res.ok) { wrap.innerHTML = '<div class="empty">โหลดรายการไม่สำเร็จ</div>'; return; }
+      renderTrips(res.trips);
+    }).catch(function () { wrap.innerHTML = '<div class="empty">โหลดรายการไม่สำเร็จ</div>'; });
 }
 function renderDonut(actual, plan) {
   var pct = plan > 0 ? Math.round((actual / plan) * 100) : 0;
@@ -1120,18 +1146,22 @@ function renderDonut(actual, plan) {
   document.getElementById('donutPct').textContent = plan > 0 ? pct + '%' : '—';
   document.getElementById('donutInfo').textContent = 'จริง ' + actual + ' / แผน ' + plan;
 }
-function renderBars2(perDay, perDayPlan, from, to) {
+function renderBars2(perDay, perDayPlan, to) {
   var wrap = document.getElementById('dayBars');
   wrap.innerHTML = '';
+  // สร้างแค่ 10 วันล่าสุด (นับถอยจากวันสุดท้ายของช่วง) — ไม่ loop ทั้งช่วง ไม่ค้าง
   var days = [];
-  for (var d = new Date(from); d <= new Date(to); d = new Date(d.getTime() + 86400000)) days.push(fmtDate(d));
-  if (days.length > 12) days = days.slice(-12);
+  var end = parseYMD(to);
+  for (var i = 9; i >= 0; i--) {
+    var d = new Date(end.getFullYear(), end.getMonth(), end.getDate() - i);
+    days.push(fmtLocal(d));
+  }
   var max = 1;
   days.forEach(function (day) { max = Math.max(max, perDay[day] || 0, perDayPlan[day] || 0); });
   wrap.className = 'bars2';
   days.forEach(function (day) {
     var act = perDay[day] || 0, plan = perDayPlan[day] || 0;
-    var dd = new Date(day);
+    var dd = parseYMD(day);
     var col = document.createElement('div');
     col.className = 'barcol2';
     col.innerHTML =
@@ -1147,12 +1177,10 @@ function renderBars2(perDay, perDayPlan, from, to) {
     }, 60);
   });
 }
-function renderTopStores(perParty) {
+function renderTopStores(entries) {
   var wrap = document.getElementById('topStores');
-  var entries = Object.keys(perParty || {}).map(function (k) { return { code: k, n: perParty[k] }; });
+  entries = (entries || []).slice(0, 10);
   if (!entries.length) { wrap.innerHTML = '<div class="empty">ไม่มีข้อมูลในช่วงที่เลือก</div>'; return; }
-  entries.sort(function (a, b) { return b.n - a.n; });
-  entries = entries.slice(0, 10);
   var max = entries[0].n || 1;
   wrap.innerHTML = '';
   entries.forEach(function (e, i) {
@@ -1229,19 +1257,22 @@ function closeModal() { document.getElementById('photoModal').classList.remove('
 function loadMorePhotos() {
   var btn = document.getElementById('btnMore');
   btn.style.display = 'block'; btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังโหลด...';
-  api({ action: 'getTripPhotos', token: S.adminToken, folderId: S.modalFolder, offset: S.modalOffset, limit: 6 })
+  api({ action: 'getTripPhotos', token: S.adminToken, folderId: S.modalFolder, offset: S.modalOffset, limit: 12 }, { retries: 2 })
     .then(function (res) {
       btn.disabled = false; btn.textContent = 'โหลดรูปเพิ่ม';
       if (!res.ok) { toast('โหลดรูปไม่สำเร็จ', true); return; }
       S.modalTotal = res.total;
       res.photos.forEach(function (p) {
         var img = document.createElement('img');
-        img.src = 'data:image/jpeg;base64,' + p.data;
+        img.loading = 'lazy';
+        // โหลด thumbnail ตรงจาก Drive CDN (เบราว์เซอร์โหลดขนานเอง ไม่ผ่าน base64/GAS)
+        img.src = 'https://drive.google.com/thumbnail?id=' + p.id + '&sz=w800';
+        img.onclick = function () { window.open('https://drive.google.com/file/d/' + p.id + '/view', '_blank'); };
         document.getElementById('mGrid').appendChild(img);
       });
       S.modalOffset += res.photos.length;
       btn.style.display = S.modalOffset < S.modalTotal ? 'block' : 'none';
-    });
+    }).catch(function () { btn.disabled = false; btn.textContent = 'โหลดรูปเพิ่ม'; toast('โหลดรูปไม่สำเร็จ', true); });
 }
 
 /* ================= EXPORT ================= */
@@ -1352,7 +1383,7 @@ function setExpProg(pct, txt) {
 }
 function fetchAllPhotos(trip, onEach, onProgress) {
   var LIMIT = 6, CONC = 3;
-  return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: 0, limit: LIMIT })
+  return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: 0, limit: LIMIT, withData: 1 })
     .then(function (first) {
       if (!first.ok) return;
       var total = first.total;
@@ -1365,7 +1396,7 @@ function fetchAllPhotos(trip, onEach, onProgress) {
       function worker() {
         if (idx >= offsets.length) return Promise.resolve();
         var o = offsets[idx++];
-        return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: o, limit: LIMIT })
+        return api({ action: 'getTripPhotos', token: S.adminToken, folderId: trip.folderId, offset: o, limit: LIMIT, withData: 1 })
           .then(function (res) {
             if (res.ok) {
               results[o] = res.photos;
