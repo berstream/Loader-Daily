@@ -349,12 +349,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div id="roleSelect">
       <div class="rolecard loader" onclick="chooseUserRole('out')">
         <div class="ic">📦</div>
-        <div><h3>Loader (ขาออก)</h3><p>โหลดสินค้าขึ้นรถส่ง Store — บันทึกและอัพโหลดรูป</p></div>
+        <div><h3>Loader (Outbound)</h3><p>โหลดสินค้าขึ้นรถส่ง Store — บันทึกและอัพโหลดรูป</p></div>
         <div class="arrow">›</div>
       </div>
       <div class="rolecard receiver" style="animation-delay:.08s" onclick="chooseUserRole('in')">
         <div class="ic">📥</div>
-        <div><h3>Receiver (ขาเข้า)</h3><p>รับของจาก Supplier เข้าคลัง — บันทึกและอัพโหลดรูป</p></div>
+        <div><h3>Receiver (Inbound)</h3><p>รับของจาก Supplier เข้าคลัง — บันทึกและอัพโหลดรูป</p></div>
         <div class="arrow">›</div>
       </div>
       <div class="rolecard admin" style="animation-delay:.16s" onclick="showAdminForm()">
@@ -388,8 +388,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="view" id="v-upload">
     <button class="btn btn-ghost btn-sm" id="btnBackAdmin" style="display:none;margin-top:16px" onclick="adminTab('dash')">← กลับ Dashboard</button>
     <div class="dirtoggle" id="upDirToggle" style="display:none;margin-top:16px">
-      <div class="dtab on" id="upDirOut" onclick="switchUploadDir('out')">📤 อัพโหลดขาออก</div>
-      <div class="dtab" id="upDirIn" onclick="switchUploadDir('in')">📥 อัพโหลดขาเข้า</div>
+      <div class="dtab on" id="upDirOut" onclick="switchUploadDir('out')">📤 อัพโหลด Outbound</div>
+      <div class="dtab" id="upDirIn" onclick="switchUploadDir('in')">📥 อัพโหลด Inbound</div>
     </div>
     <div class="card">
       <h2 id="tripCardTitle">ข้อมูลเที่ยวขนส่ง <span class="tag" id="tripCardTag">TRIP</span></h2>
@@ -465,13 +465,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- dashboard -->
     <div id="adm-dash">
       <div class="dirtoggle">
-        <div class="dtab on" id="dirOut" onclick="switchDir('out')">📤 ขาออก (Out)</div>
-        <div class="dtab" id="dirIn" onclick="switchDir('in')">📥 ขาเข้า (In)</div>
+        <div class="dtab on" id="dirOut" onclick="switchDir('out')">📤 Outbound</div>
+        <div class="dtab" id="dirIn" onclick="switchDir('in')">📥 Inbound</div>
       </div>
       <div class="filters">
         <div><label class="f">จากวันที่</label><input type="date" id="dashFrom"></div>
         <div><label class="f">ถึงวันที่</label><input type="date" id="dashTo"></div>
-        <div style="display:flex;align-items:flex-end"><button class="btn btn-ghost btn-sm" style="width:100%" onclick="loadDashboard()">🔄 โหลดข้อมูล</button></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn btn-ghost btn-sm" style="width:100%" onclick="loadDashboard(true)">🔄 โหลดข้อมูล</button></div>
       </div>
       <div class="stats">
         <div class="stat"><div class="lbl">Trip ทั้งหมด</div><div class="val am" id="stTrips">—</div></div>
@@ -480,7 +480,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
 
       <div class="card">
-        <h2>เทียบแผนกับจริง <span class="tag" id="planTag">OUT</span></h2>
+        <h2>เทียบแผนกับจริง <span class="tag" id="planTag">OUTBOUND</span></h2>
         <div class="planwrap">
           <div class="donut" id="donutWrap">
             <svg viewBox="0 0 120 120" width="120" height="120">
@@ -497,8 +497,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div class="pe-title">ตั้งแผนรายวัน</div>
             <input type="date" id="planDate" onchange="loadPlanForDate()">
             <div class="pe-fields">
-              <div><label class="f">แผน Out</label><input type="number" id="planOut" min="0" placeholder="0"></div>
-              <div><label class="f">แผน In</label><input type="number" id="planIn" min="0" placeholder="0"></div>
+              <div><label class="f">แผน Outbound</label><input type="number" id="planOut" min="0" placeholder="0"></div>
+              <div><label class="f">แผน Inbound</label><input type="number" id="planIn" min="0" placeholder="0"></div>
             </div>
             <button class="btn btn-amber btn-sm" id="btnSavePlan" style="width:100%" onclick="savePlan()">💾 บันทึกแผน</button>
             <div class="planhint" id="planHint" style="display:none">✅ บันทึกแล้ว — ตั้งแผนวันอื่นต่อได้ เสร็จแล้วกด <b>🔄 โหลดข้อมูล</b> ด้านบนเพื่อแสดงผลรวม</div>
@@ -524,8 +524,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="card">
         <h2>ดึงข้อมูลย้อนหลัง <span class="tag">EXPORT</span></h2>
         <div class="dirtoggle" style="margin:0 0 14px">
-          <div class="dtab on" id="expDirOut" onclick="switchExpDir('out')">📤 ขาออก</div>
-          <div class="dtab" id="expDirIn" onclick="switchExpDir('in')">📥 ขาเข้า</div>
+          <div class="dtab on" id="expDirOut" onclick="switchExpDir('out')">📤 Outbound</div>
+          <div class="dtab" id="expDirIn" onclick="switchExpDir('in')">📥 Inbound</div>
         </div>
         <div class="tabs" style="margin:0 0 16px">
           <div class="tab on" id="expSingle" onclick="expMode('single')">วันเดียว</div>
@@ -937,43 +937,57 @@ function submitTrip() {
 }
 
 function uploadInBatches(folderId, tripId, serverTime) {
-  var BATCH = 5;
+  var BATCH = 5;         // รูปต่อ request
+  var PARALLEL = 2;      // จำนวน request พร้อมกัน (สมดุลเร็ว/เสถียรบนมือถือ)
   var total = S.photos.length;
-  var idx = 0;
   var btn = document.getElementById('btnSubmit');
   function pad3(n) { return ('00' + n).slice(-3); }
 
-  function next() {
-    if (idx >= total) {
-      setProg(100, 'กำลังปิด Trip...');
-      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, photoCount: total }).then(function (res) {
-        btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
-        showSuccess(serverTime, total);
-      });
-      return;
-    }
-    var batch = S.photos.slice(idx, idx + BATCH);
-    var base = idx;
-    Promise.all(batch.map(function (p, k) {
+  // แบ่งเป็นก้อนๆ ละ BATCH รูป
+  var batches = [];
+  for (var i = 0; i < total; i += BATCH) batches.push({ start: i, items: S.photos.slice(i, i + BATCH) });
+
+  var uploaded = 0, bi = 0, active = 0, failed = false, done = false;
+
+  function sendBatch(b) {
+    return Promise.all(b.items.map(function (p, k) {
       return blobToBase64(p.blob).then(function (b64) {
-        // ชื่อผูกกับ TripID + ลำดับรูป — retry ส่งซ้ำได้ปลอดภัย server เขียนทับตัวเดิม
-        return { name: tripId + '_' + pad3(base + k + 1) + '.jpg', data: b64 };
+        return { name: tripId + '_' + pad3(b.start + k + 1) + '.jpg', data: b64 };  // deterministic + upsert = ส่งซ้ำ/ขนานปลอดภัย
       });
     })).then(function (payloadPhotos) {
       return api({ action: 'uploadBatch', folderId: folderId, photos: payloadPhotos });
     }).then(function (res) {
-      if (!res.ok) throw new Error(res.error);
-      idx += batch.length;
-      var pct = (idx / total) * 95;
-      setProg(pct, 'อัพโหลดรูป ' + idx + '/' + total);
-      btn.innerHTML = '<span class="spin"></span> อัพโหลด ' + idx + '/' + total;
-      next();
-    }).catch(function () {
-      toast('อัพโหลดสะดุด — กำลังลองใหม่...', true);
-      setTimeout(next, 2500);
+      if (!res.ok) throw new Error(res.error || 'batch fail');
+      uploaded += b.items.length;
+      var pct = (uploaded / total) * 95;
+      setProg(pct, 'อัพโหลดรูป ' + uploaded + '/' + total);
+      btn.innerHTML = '<span class="spin"></span> อัพโหลด ' + uploaded + '/' + total;
     });
   }
-  next();
+
+  function pump() {
+    if (done) return;
+    // เติมคิวให้ครบ PARALLEL
+    while (active < PARALLEL && bi < batches.length && !failed) {
+      var b = batches[bi++]; active++;
+      sendBatch(b).then(function () {
+        active--; pump();
+      }).catch(function () {
+        active--; bi--;           // คืนก้อนที่พลาดกลับคิว retry
+        if (!failed) { failed = true; toast('อัพโหลดสะดุด — กำลังลองใหม่...', true); setTimeout(function () { failed = false; pump(); }, 2500); }
+      });
+    }
+    // เสร็จครบทุกก้อน
+    if (uploaded >= total && !done) {
+      done = true;
+      setProg(100, 'กำลังปิด Trip...');
+      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, photoCount: total }).then(function () {
+        btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+        showSuccess(serverTime, total);
+      });
+    }
+  }
+  pump();
 }
 
 function showSuccess(serverTime, count) {
@@ -1062,7 +1076,7 @@ function initDashDates() {
 function applyDirTabUI() {
   document.getElementById('dirOut').classList.toggle('on', S.dir === 'out');
   document.getElementById('dirIn').classList.toggle('on', S.dir === 'in');
-  document.getElementById('planTag').textContent = S.dir === 'in' ? 'IN' : 'OUT';
+  document.getElementById('planTag').textContent = S.dir === 'in' ? 'INBOUND' : 'OUTBOUND';
   document.getElementById('topTitle').firstChild.nodeValue =
     (S.dir === 'in' ? 'Supplier ที่ส่ง Trip มากที่สุด ' : 'สาขาที่มี Trip มากที่สุด ');
 }
@@ -1071,12 +1085,13 @@ function switchDir(dir) {
   applyDirTabUI();
   loadDashboard();
 }
-function loadDashboard() {
+function loadDashboard(force) {
   var from = document.getElementById('dashFrom').value;
   var to = document.getElementById('dashTo').value;
+  var planDate = document.getElementById('planDate').value;
   var ph = document.getElementById('planHint'); if (ph) ph.style.display = 'none';
   document.getElementById('dayBars').innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span></div>';
-  api({ action: 'getDashboard', token: S.adminToken, dir: S.dir, from: from, to: to }).then(function (res) {
+  api({ action: 'getDashboard', token: S.adminToken, dir: S.dir, from: from, to: to, planDate: planDate, noCache: force ? 1 : 0 }).then(function (res) {
     if (!res.ok) {
       if (res.error === 'UNAUTHORIZED') { toast('Session หมดอายุ — เข้าสู่ระบบใหม่', true); logout(); }
       return;
@@ -1088,8 +1103,12 @@ function loadDashboard() {
     renderBars2(res.perDay, res.perDayPlan || {}, from, to);
     renderTopStores(res.perParty);
     renderTrips(res.trips);
+    // เติมช่องแผนจากข้อมูลชุดเดียวกัน ไม่ต้องยิง getPlan อีกรอบ
+    if (res.planForDate) {
+      document.getElementById('planIn').value = res.planForDate.planIn || '';
+      document.getElementById('planOut').value = res.planForDate.planOut || '';
+    }
   });
-  loadPlanForDate();
 }
 function renderDonut(actual, plan) {
   var pct = plan > 0 ? Math.round((actual / plan) * 100) : 0;
