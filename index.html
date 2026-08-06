@@ -94,6 +94,7 @@ body{
 .rolecard.loader .ic{background:var(--amber-glow);border:1px solid rgba(255,178,36,.3)}
 .rolecard.admin .ic{background:rgba(90,167,255,.12);border:1px solid rgba(90,167,255,.3)}
 .rolecard.receiver .ic{background:var(--teal-bg);border:1px solid rgba(45,212,167,.35)}
+.rolecard.picking .ic{background:rgba(226,75,74,.12);border:1px solid rgba(226,75,74,.35)}
 .rolecard h3{font-size:17px;font-weight:600}
 .rolecard p{font-size:13px;color:var(--sub);margin-top:2px}
 .rolecard .arrow{margin-left:auto;color:var(--mut);font-size:20px}
@@ -210,8 +211,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .filters{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
 .filters>*{flex:1;min-width:140px}
 /* dir toggle */
-.dirtoggle{display:flex;gap:8px;margin-top:16px}
-.dtab{flex:1;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;text-align:center;font-size:14px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s}
+.dirtoggle{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.dtab{flex:1;min-width:88px;padding:12px 8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;text-align:center;font-size:13.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s}
+/* โดนัท 3 วง (โหมด All) */
+.donutrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.dcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center;animation:rise .4s ease both}
+.dcard:nth-child(2){animation-delay:.06s}.dcard:nth-child(3){animation-delay:.12s}
+.dhead{font-size:12.5px;color:var(--sub);margin-bottom:8px;font-weight:500}
+.dfoot{font-size:11.5px;color:var(--sub);margin-top:6px;font-family:'IBM Plex Mono',monospace}
+@media(max-width:520px){.donutrow{grid-template-columns:1fr}.dcard{display:flex;align-items:center;gap:14px;text-align:left;padding:12px 14px}.dcard svg{flex-shrink:0;width:86px;height:86px}.dhead{margin-bottom:2px}}
 .dtab.on{background:var(--amber-glow);border-color:var(--amber);color:var(--amber)}
 /* plan + donut */
 .planwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
@@ -357,7 +365,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div><h3>Receiver (Inbound)</h3><p>รับของจาก Supplier เข้าคลัง — บันทึกและอัพโหลดรูป</p></div>
         <div class="arrow">›</div>
       </div>
-      <div class="rolecard admin" style="animation-delay:.16s" onclick="showAdminForm()">
+      <div class="rolecard picking" style="animation-delay:.16s" onclick="chooseUserRole('picking')">
+        <div class="ic">✅</div>
+        <div><h3>Picking (QC)</h3><p>ตรวจสอบสินค้าก่อนโหลด — บันทึกและอัพโหลดรูป</p></div>
+        <div class="arrow">›</div>
+      </div>
+      <div class="rolecard admin" style="animation-delay:.24s" onclick="showAdminForm()">
         <div class="ic">🗂️</div>
         <div><h3>Warehouse Admin</h3><p>Dashboard · ดึงข้อมูลย้อนหลัง · Export</p></div>
         <div class="arrow">›</div>
@@ -390,10 +403,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="dirtoggle" id="upDirToggle" style="display:none;margin-top:16px">
       <div class="dtab on" id="upDirOut" onclick="switchUploadDir('out')">📤 อัพโหลด Outbound</div>
       <div class="dtab" id="upDirIn" onclick="switchUploadDir('in')">📥 อัพโหลด Inbound</div>
+      <div class="dtab" id="upDirPicking" onclick="switchUploadDir('picking')">✅ อัพโหลด Picking</div>
     </div>
     <div class="card">
       <h2 id="tripCardTitle">ข้อมูลเที่ยวขนส่ง <span class="tag" id="tripCardTag">TRIP</span></h2>
-      <div class="fgroup">
+      <div class="fgroup" id="plateGroup">
         <label class="f">เลขทะเบียนรถ</label>
         <input type="text" id="fPlate" placeholder="เช่น 82-1234 อยุธยา" autocomplete="off">
       </div>
@@ -410,7 +424,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <input type="text" id="fManifest" placeholder="เช่น LM-20260728-001" autocomplete="off">
         <div class="err" id="manErr">เลขนี้ถูกใช้ไปแล้ว</div>
       </div>
-      <div class="fgroup" style="margin-bottom:0">
+      <div class="fgroup" id="truckGroup" style="margin-bottom:0">
         <label class="f">ขนาดรถขนส่ง</label>
         <div class="trucks" id="truckTiles">
           <div class="truck" data-v="4"><div class="n">4</div><div class="l">ล้อ</div></div>
@@ -465,8 +479,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <!-- dashboard -->
     <div id="adm-dash">
       <div class="dirtoggle">
+        <div class="dtab" id="dirAll" onclick="switchDir('all')">📊 All</div>
         <div class="dtab on" id="dirOut" onclick="switchDir('out')">📤 Outbound</div>
         <div class="dtab" id="dirIn" onclick="switchDir('in')">📥 Inbound</div>
+        <div class="dtab" id="dirPicking" onclick="switchDir('picking')">✅ Picking</div>
       </div>
       <div class="filters">
         <div><label class="f">จากวันที่</label><input type="date" id="dashFrom"></div>
@@ -474,11 +490,52 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div style="display:flex;align-items:flex-end"><button class="btn btn-ghost btn-sm" style="width:100%" onclick="loadDashboard(true)">🔄 โหลดข้อมูล</button></div>
       </div>
       <div class="stats">
-        <div class="stat"><div class="lbl">Trip ทั้งหมด</div><div class="val am" id="stTrips">—</div></div>
+        <div class="stat"><div class="lbl" id="stTripsLbl">Trip ทั้งหมด</div><div class="val am" id="stTrips">—</div></div>
         <div class="stat"><div class="lbl">รูปทั้งหมด</div><div class="val" id="stPhotos">—</div></div>
-        <div class="stat"><div class="lbl">รถที่เข้า</div><div class="val" id="stTrucks">—</div></div>
+        <div class="stat"><div class="lbl" id="stTrucksLbl">รถที่เข้า</div><div class="val" id="stTrucks">—</div></div>
       </div>
 
+      <!-- โหมด All: โดนัท 3 วง -->
+      <div id="allView" style="display:none">
+        <div class="donutrow">
+          <div class="dcard">
+            <div class="dhead">📤 Outbound</div>
+            <svg viewBox="0 0 120 120" width="118" height="118">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--panel2)" stroke-width="14"/>
+              <circle id="dArcOut" cx="60" cy="60" r="50" fill="none" stroke="#EDA100" stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s cubic-bezier(.34,1.2,.64,1)"/>
+              <text id="dPctOut" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'IBM Plex Mono',monospace">—</text>
+              <text x="60" y="76" text-anchor="middle" font-size="9" fill="var(--sub)">ทำได้/แผน</text>
+            </svg>
+            <div class="dfoot" id="dInfoOut">จริง — / แผน —</div>
+          </div>
+          <div class="dcard">
+            <div class="dhead">📥 Inbound</div>
+            <svg viewBox="0 0 120 120" width="118" height="118">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--panel2)" stroke-width="14"/>
+              <circle id="dArcIn" cx="60" cy="60" r="50" fill="none" stroke="#2A78D6" stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s cubic-bezier(.34,1.2,.64,1)"/>
+              <text id="dPctIn" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'IBM Plex Mono',monospace">—</text>
+              <text x="60" y="76" text-anchor="middle" font-size="9" fill="var(--sub)">ทำได้/แผน</text>
+            </svg>
+            <div class="dfoot" id="dInfoIn">จริง — / แผน —</div>
+          </div>
+          <div class="dcard">
+            <div class="dhead">✅ Picking</div>
+            <svg viewBox="0 0 120 120" width="118" height="118">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--panel2)" stroke-width="14"/>
+              <circle id="dArcPick" cx="60" cy="60" r="50" fill="none" stroke="#E24B4A" stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s cubic-bezier(.34,1.2,.64,1)"/>
+              <text id="dPctPick" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'IBM Plex Mono',monospace">—</text>
+              <text x="60" y="76" text-anchor="middle" font-size="9" fill="var(--sub)">ทำได้/แผน</text>
+            </svg>
+            <div class="dfoot" id="dInfoPick">จริง — / แผน —</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- โหมดแผนก -->
+      <div id="deptView">
       <div class="card">
         <h2>เทียบแผนกับจริง <span class="tag" id="planTag">OUTBOUND</span></h2>
         <div class="planwrap">
@@ -499,6 +556,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div class="pe-fields">
               <div><label class="f">แผน Outbound</label><input type="number" id="planOut" min="0" placeholder="0"></div>
               <div><label class="f">แผน Inbound</label><input type="number" id="planIn" min="0" placeholder="0"></div>
+              <div><label class="f">แผน Picking</label><input type="number" id="planPicking" min="0" placeholder="0"></div>
             </div>
             <button class="btn btn-amber btn-sm" id="btnSavePlan" style="width:100%" onclick="savePlan()">💾 บันทึกแผน</button>
             <div class="planhint" id="planHint" style="display:none">✅ บันทึกแล้ว — ตั้งแผนวันอื่นต่อได้ เสร็จแล้วกด <b>🔄 โหลดข้อมูล</b> ด้านบนเพื่อแสดงผลรวม</div>
@@ -517,6 +575,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <p class="listhead">Trip ล่าสุด</p>
       <div class="triplist" id="tripList"></div>
+      </div>
     </div>
 
     <!-- export -->
@@ -526,6 +585,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="dirtoggle" style="margin:0 0 14px">
           <div class="dtab on" id="expDirOut" onclick="switchExpDir('out')">📤 Outbound</div>
           <div class="dtab" id="expDirIn" onclick="switchExpDir('in')">📥 Inbound</div>
+          <div class="dtab" id="expDirPicking" onclick="switchExpDir('picking')">✅ Picking</div>
         </div>
         <div class="tabs" style="margin:0 0 16px">
           <div class="tab on" id="expSingle" onclick="expMode('single')">วันเดียว</div>
@@ -595,6 +655,7 @@ var S = {
   exportTrips: [],
   modalFolder: '', modalOffset: 0, modalTotal: 0
 };
+var DIRTAG = { out: 'OUTBOUND', 'in': 'INBOUND', picking: 'PICKING' };
 // ข้อความต่างกันตามขา
 var DIRCFG = {
   out: { userRole: 'loader', userLabel: 'LOADER', formTitle: '📦 เข้าใช้งานแบบ Loader', nameLabel: 'ชื่อผู้โหลด',
@@ -602,7 +663,10 @@ var DIRCFG = {
          dupMsg: 'เลข Manifest นี้ถูกใช้ไปแล้ว' },
   in:  { userRole: 'receiver', userLabel: 'RECEIVER', formTitle: '📥 เข้าใช้งานแบบ Receiver', nameLabel: 'ชื่อผู้รับของ',
          cardTitle: 'ข้อมูลการรับของ', cardTag: 'รับเข้า', docLabel: 'เลข PO / Invoice / DO', docPh: 'เช่น PO-2026072800',
-         dupMsg: 'เลขเอกสารนี้ถูกใช้ไปแล้ว' }
+         dupMsg: 'เลขเอกสารนี้ถูกใช้ไปแล้ว' },
+  picking: { userRole: 'picking', userLabel: 'PICKING (QC)', formTitle: '✅ เข้าใช้งานแบบ Picking', nameLabel: 'ชื่อผู้ตรวจ (QC)',
+         cardTitle: 'ข้อมูล Picking Complete', cardTag: 'PICKING', docLabel: 'Outbound Label', docPh: 'เช่น OB-20260806-001',
+         dupMsg: 'Outbound Label นี้ถูกใช้ไปแล้ว' }
 };
 var THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 var THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -695,8 +759,11 @@ function applyUploadForm() {
   document.getElementById('docLabel').textContent = c.docLabel;
   document.getElementById('fManifest').placeholder = c.docPh;
   document.getElementById('manErr').textContent = c.dupMsg;
-  document.getElementById('storeGroup').style.display = S.dir === 'out' ? 'block' : 'none';
+  var isPick = (S.dir === 'picking');
+  document.getElementById('storeGroup').style.display = (S.dir === 'out' || isPick) ? 'block' : 'none';
   document.getElementById('supplierGroup').style.display = S.dir === 'in' ? 'block' : 'none';
+  document.getElementById('plateGroup').style.display = isPick ? 'none' : 'block';
+  document.getElementById('truckGroup').style.display = isPick ? 'none' : 'block';
 }
 function showAdminForm() {
   document.getElementById('roleSelect').style.display = 'none';
@@ -911,8 +978,9 @@ function blobToBase64(blob) {
 function submitTrip() {
   var plate = document.getElementById('fPlate').value.trim();
   var docno = document.getElementById('fManifest').value.trim();
+  var isPick = (S.dir === 'picking');
   var partyCode = '', partyName = '';
-  if (S.dir === 'out') {
+  if (S.dir === 'out' || isPick) {
     var storeSel = document.getElementById('fStore');
     partyCode = storeSel.value;
     partyName = partyCode ? storeSel.options[storeSel.selectedIndex].text : '';
@@ -921,9 +989,15 @@ function submitTrip() {
   }
   document.getElementById('manErr').classList.remove('on');
 
-  if (!plate) { toast('กรอกเลขทะเบียนรถก่อน', true); return; }
-  if (!docno) { toast('กรอกเลขเอกสารก่อน', true); return; }
-  if (!S.truckSize) { toast('เลือกขนาดรถก่อน', true); return; }
+  if (isPick) {
+    // QC เช็ค 100% — ต้องครบทุกช่องก่อนบันทึก
+    if (!docno) { toast('กรอก Outbound Label ก่อน', true); return; }
+    if (!partyCode) { toast('เลือก Store ก่อน', true); return; }
+  } else {
+    if (!plate) { toast('กรอกเลขทะเบียนรถก่อน', true); return; }
+    if (!docno) { toast('กรอกเลขเอกสารก่อน', true); return; }
+    if (!S.truckSize) { toast('เลือกขนาดรถก่อน', true); return; }
+  }
   if (!S.photos.length) { toast('เลือกรูปอย่างน้อย 1 รูป', true); return; }
 
   var btn = document.getElementById('btnSubmit');
@@ -934,7 +1008,7 @@ function submitTrip() {
   api({
     action: 'createTrip', dir: S.dir,
     user: S.name, plate: plate, docno: docno,
-    partyCode: partyCode, partyName: partyName, truckSize: S.truckSize + ' ล้อ'
+    partyCode: partyCode, partyName: partyName, truckSize: isPick ? '' : (S.truckSize + ' ล้อ')
   }).then(function (res) {
     if (!res.ok) {
       btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
@@ -1004,19 +1078,21 @@ function uploadInBatches(folderId, tripId, serverTime) {
 
 function showSuccess(serverTime, count) {
   var meta = document.getElementById('successMeta');
+  var isPick = (S.dir === 'picking');
   var partyRow;
-  if (S.dir === 'out') {
+  if (S.dir === 'out' || isPick) {
     var storeSel = document.getElementById('fStore');
     partyRow = '<div><span>Store</span><b>' + (storeSel.value ? storeSel.options[storeSel.selectedIndex].text : '-') + '</b></div>';
   } else {
     partyRow = '<div><span>Supplier</span><b>' + (document.getElementById('fSupplier').value.trim() || '-') + '</b></div>';
   }
+  var docLbl = isPick ? 'Outbound Label' : (S.dir === 'in' ? 'เลขเอกสาร' : 'Manifest');
   meta.innerHTML =
     '<div><span>เวลาบันทึก (ระบบ)</span><b>' + (serverTime ? serverTime.displayTime : '-') + '</b></div>' +
-    '<div><span>' + (S.dir === 'in' ? 'เลขเอกสาร' : 'Manifest') + '</span><b>' + document.getElementById('fManifest').value.trim() + '</b></div>' +
-    '<div><span>ทะเบียน</span><b>' + document.getElementById('fPlate').value.trim() + '</b></div>' +
+    '<div><span>' + docLbl + '</span><b>' + document.getElementById('fManifest').value.trim() + '</b></div>' +
+    (isPick ? '' : '<div><span>ทะเบียน</span><b>' + document.getElementById('fPlate').value.trim() + '</b></div>') +
     partyRow +
-    '<div><span>ขนาดรถ</span><b>' + S.truckSize + ' ล้อ</b></div>' +
+    (isPick ? '' : '<div><span>ขนาดรถ</span><b>' + S.truckSize + ' ล้อ</b></div>') +
     '<div><span>จำนวนรูป</span><b>' + count + ' รูป</b></div>';
   show('v-success');
 }
@@ -1045,8 +1121,10 @@ function adminTab(which) {
     document.getElementById('tabUp').classList.add('on');
     // Admin สลับขาอัพโหลดได้
     document.getElementById('upDirToggle').style.display = 'flex';
+    if (S.dir === 'all') S.dir = 'out';
     document.getElementById('upDirOut').classList.toggle('on', S.dir === 'out');
     document.getElementById('upDirIn').classList.toggle('on', S.dir === 'in');
+    document.getElementById('upDirPicking').classList.toggle('on', S.dir === 'picking');
     applyUploadForm();
     show('v-upload');
     return;
@@ -1061,6 +1139,7 @@ function switchUploadDir(dir) {
   S.dir = dir;
   document.getElementById('upDirOut').classList.toggle('on', dir === 'out');
   document.getElementById('upDirIn').classList.toggle('on', dir === 'in');
+  document.getElementById('upDirPicking').classList.toggle('on', dir === 'picking');
   document.getElementById('roleLabel').textContent = DIRCFG[dir].userLabel;
   // เคลียร์ฟอร์มกันข้อมูลขาเก่าปนขาใหม่
   document.getElementById('fPlate').value = '';
@@ -1088,11 +1167,20 @@ function initDashDates() {
   document.getElementById('planDate').value = fmtDate(today);
 }
 function applyDirTabUI() {
+  var isAll = (S.dir === 'all');
+  document.getElementById('dirAll').classList.toggle('on', isAll);
   document.getElementById('dirOut').classList.toggle('on', S.dir === 'out');
   document.getElementById('dirIn').classList.toggle('on', S.dir === 'in');
-  document.getElementById('planTag').textContent = S.dir === 'in' ? 'INBOUND' : 'OUTBOUND';
-  document.getElementById('topTitle').firstChild.nodeValue =
-    (S.dir === 'in' ? 'Supplier ที่ส่ง Trip มากที่สุด ' : 'สาขาที่มี Trip มากที่สุด ');
+  document.getElementById('dirPicking').classList.toggle('on', S.dir === 'picking');
+  document.getElementById('allView').style.display = isAll ? 'block' : 'none';
+  document.getElementById('deptView').style.display = isAll ? 'none' : 'block';
+  document.getElementById('stTripsLbl').textContent = isAll ? 'Trip รวมทุกแผนก' : 'Trip ทั้งหมด';
+  document.getElementById('stTrucksLbl').textContent = (S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า';
+  if (!isAll) {
+    document.getElementById('planTag').textContent = DIRTAG[S.dir] || 'OUTBOUND';
+    document.getElementById('topTitle').firstChild.nodeValue =
+      (S.dir === 'in' ? 'Supplier ที่ส่ง Trip มากที่สุด ' : 'สาขาที่มี Trip มากที่สุด ');
+  }
 }
 function switchDir(dir) {
   S.dir = dir;
@@ -1104,6 +1192,7 @@ function loadDashboard(force) {
   var to = document.getElementById('dashTo').value;
   var planDate = document.getElementById('planDate').value;
   var ph = document.getElementById('planHint'); if (ph) ph.style.display = 'none';
+  if (S.dir === 'all') { loadSummaryAll(from, to, force); return; }
   document.getElementById('dayBars').innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span></div>';
   api({ action: 'getDashboard', token: S.adminToken, dir: S.dir, from: from, to: to, planDate: planDate, noCache: force ? 1 : 0 }).then(function (res) {
     if (!res.ok) {
@@ -1119,6 +1208,7 @@ function loadDashboard(force) {
     if (res.planForDate) {
       document.getElementById('planIn').value = res.planForDate.planIn || '';
       document.getElementById('planOut').value = res.planForDate.planOut || '';
+      document.getElementById('planPicking').value = res.planForDate.planPicking || '';
     }
     // รายการ trip โหลดแยกทีหลัง ไม่ถ่วงกราฟให้ขึ้นช้า
     loadRecentTrips(from, to, force);
@@ -1126,6 +1216,34 @@ function loadDashboard(force) {
     document.getElementById('dayBars').innerHTML = '<div class="empty">โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่</div>';
     toast('โหลด Dashboard ไม่สำเร็จ', true);
   });
+}
+/* โหมด All — 1 request รวม 3 แผนก */
+function loadSummaryAll(from, to, force) {
+  ['Out', 'In', 'Pick'].forEach(function (k) {
+    document.getElementById('dPct' + k).textContent = '…';
+  });
+  api({ action: 'getSummaryAll', token: S.adminToken, from: from, to: to, noCache: force ? 1 : 0 }, { retries: 2 })
+    .then(function (res) {
+      if (!res.ok) {
+        if (res.error === 'UNAUTHORIZED') { toast('Session หมดอายุ — เข้าสู่ระบบใหม่', true); logout(); }
+        return;
+      }
+      document.getElementById('stTrips').textContent = res.total.trips;
+      document.getElementById('stPhotos').textContent = res.total.photos.toLocaleString();
+      document.getElementById('stTrucks').textContent = res.total.trucks;
+      renderDonutInto('Out', res.per.out, '#EDA100');
+      renderDonutInto('In', res.per['in'], '#2A78D6');
+      renderDonutInto('Pick', res.per.picking, '#E24B4A');
+    }).catch(function () { toast('โหลดข้อมูลรวมไม่สำเร็จ', true); });
+}
+function renderDonutInto(key, d, color) {
+  d = d || { trips: 0, plan: 0 };
+  var pct = d.plan > 0 ? Math.round((d.trips / d.plan) * 100) : 0;
+  var arc = document.getElementById('dArc' + key), circ = 314;
+  arc.style.strokeDashoffset = circ - (circ * Math.min(pct, 100) / 100);
+  arc.setAttribute('stroke', pct >= 100 ? '#2DD4A7' : color);
+  document.getElementById('dPct' + key).textContent = d.plan > 0 ? pct + '%' : '—';
+  document.getElementById('dInfo' + key).textContent = 'จริง ' + d.trips + ' / แผน ' + d.plan;
 }
 function loadRecentTrips(from, to, force) {
   var wrap = document.getElementById('tripList');
@@ -1206,8 +1324,8 @@ function renderTrips(trips) {
     d.className = 'trip';
     d.style.animationDelay = Math.min(i * 0.03, 0.3) + 's';
     d.innerHTML =
-      '<div class="t1">' + t.plate +
-        '<span class="badge">' + t.truckSize + '</span>' +
+      '<div class="t1">' + (t.plate || t.docno) +
+        (t.truckSize ? '<span class="badge">' + t.truckSize + '</span>' : '') +
         (isNight ? '<span class="badge night-b">🌙 กะดึก</span>' : '') +
       '</div>' +
       '<div class="t2">' + (t.partyName || t.partyCode || '-') + ' · ' + t.docno + ' · ' + t.user + '</div>' +
@@ -1222,9 +1340,10 @@ function loadPlanForDate() {
   if (!date) return;
   api({ action: 'getPlan', token: S.adminToken, from: date, to: date }).then(function (res) {
     if (!res.ok) return;
-    var p = res.plan[date] || { planIn: 0, planOut: 0 };
+    var p = res.plan[date] || { planIn: 0, planOut: 0, planPicking: 0 };
     document.getElementById('planIn').value = p.planIn || '';
     document.getElementById('planOut').value = p.planOut || '';
+    document.getElementById('planPicking').value = p.planPicking || '';
   });
 }
 function savePlan() {
@@ -1232,9 +1351,10 @@ function savePlan() {
   if (!date) { toast('เลือกวันที่ก่อน', true); return; }
   var planIn = Number(document.getElementById('planIn').value) || 0;
   var planOut = Number(document.getElementById('planOut').value) || 0;
+  var planPicking = Number(document.getElementById('planPicking').value) || 0;
   var btn = document.getElementById('btnSavePlan');
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
-  api({ action: 'savePlan', token: S.adminToken, date: date, planIn: planIn, planOut: planOut }).then(function (res) {
+  api({ action: 'savePlan', token: S.adminToken, date: date, planIn: planIn, planOut: planOut, planPicking: planPicking }).then(function (res) {
     if (btn) { btn.disabled = false; btn.textContent = '💾 บันทึกแผน'; }
     if (!res.ok) { toast('บันทึกแผนไม่สำเร็จ', true); return; }
     toast('บันทึกแผน ' + date + ' แล้ว · ตั้งวันอื่นต่อได้ แล้วกด 🔄 โหลดข้อมูล');
@@ -1287,10 +1407,13 @@ function switchExpDir(dir) {
   S.expDir = dir;
   document.getElementById('expDirOut').classList.toggle('on', dir === 'out');
   document.getElementById('expDirIn').classList.toggle('on', dir === 'in');
-  document.getElementById('expStoreGroup').style.display = dir === 'out' ? 'block' : 'none';
+  document.getElementById('expDirPicking').classList.toggle('on', dir === 'picking');
+  document.getElementById('expStoreGroup').style.display = (dir === 'out' || dir === 'picking') ? 'block' : 'none';
   document.getElementById('expSearchLabel').textContent = dir === 'in'
     ? 'ค้นหา ทะเบียนรถ / เลข PO-Invoice-DO (ไม่บังคับ)'
-    : 'ค้นหา ทะเบียนรถ / เลข Manifest (ไม่บังคับ)';
+    : dir === 'picking'
+      ? 'ค้นหา Outbound Label (ไม่บังคับ)'
+      : 'ค้นหา ทะเบียนรถ / เลข Manifest (ไม่บังคับ)';
   // ล้างผลเดิม
   document.getElementById('expSummary').classList.remove('on');
   document.getElementById('expList').innerHTML = '';
@@ -1336,8 +1459,8 @@ function renderExpList(trips) {
     d.innerHTML =
       '<input type="checkbox" id="expchk' + i + '" checked>' +
       '<div class="info">' +
-        '<div class="m">' + t.docno + ' · ' + t.plate + (isNight ? ' 🌙' : '') + '</div>' +
-        '<div class="s">' + t.businessDate + ' · ' + t.displayTime + ' · ' + (t.partyName || t.partyCode || '-') + ' · ' + t.truckSize + ' · ' + t.user + '</div>' +
+        '<div class="m">' + t.docno + (t.plate ? ' · ' + t.plate : '') + (isNight ? ' 🌙' : '') + '</div>' +
+        '<div class="s">' + t.businessDate + ' · ' + t.displayTime + ' · ' + (t.partyName || t.partyCode || '-') + (t.truckSize ? ' · ' + t.truckSize : '') + ' · ' + t.user + '</div>' +
       '</div>' +
       '<div class="ph">📷 ' + t.photoCount + '</div>';
     var chk = d.querySelector('input');
@@ -1423,14 +1546,15 @@ function makeHeaderImage(t) {
   var u = scale * 2;
   c.fillStyle = '#141822';
   c.fillRect(0, 0, cv.width, cv.height);
+  var isPick = (S.expDir === 'picking');
   c.fillStyle = '#FFB224';
   c.font = '600 ' + (5.2 * u) + 'px "IBM Plex Sans Thai", sans-serif';
-  c.fillText('WFDC CONTAINER LOADING', 10 * u, 8.5 * u);
+  c.fillText(isPick ? 'WFDC PICKING COMPLETE' : (S.expDir === 'in' ? 'WFDC RECEIVING' : 'WFDC CONTAINER LOADING'), 10 * u, 8.5 * u);
   c.fillStyle = '#E8ECF4';
   c.font = '400 ' + (3.6 * u) + 'px "IBM Plex Sans Thai", sans-serif';
-  var docLbl = (S.expDir === 'in') ? 'เอกสาร' : 'Manifest';
+  var docLbl = isPick ? 'Outbound Label' : (S.expDir === 'in') ? 'เอกสาร' : 'Manifest';
   var partyLbl = (S.expDir === 'in') ? 'Supplier' : 'Store';
-  c.fillText(docLbl + ': ' + t.docno + '    ทะเบียน: ' + t.plate + '    รถ: ' + t.truckSize, 10 * u, 15.5 * u);
+  c.fillText(docLbl + ': ' + t.docno + (isPick ? '' : '    ทะเบียน: ' + t.plate + '    รถ: ' + t.truckSize), 10 * u, 15.5 * u);
   c.fillText('วันที่: ' + t.businessDate + '    เวลา: ' + t.displayTime + '    ' + partyLbl + ': ' + (t.partyName || t.partyCode || '-') + '    ผู้บันทึก: ' + t.user, 10 * u, 21.5 * u);
   return cv.toDataURL('image/jpeg', 0.92);
 }
