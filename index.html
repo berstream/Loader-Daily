@@ -95,6 +95,9 @@ body{
 .rolecard.admin .ic{background:rgba(90,167,255,.12);border:1px solid rgba(90,167,255,.3)}
 .rolecard.receiver .ic{background:var(--teal-bg);border:1px solid rgba(45,212,167,.35)}
 .rolecard.picking .ic{background:rgba(226,75,74,.12);border:1px solid rgba(226,75,74,.35)}
+.rolecard.demo .ic{background:rgba(155,110,255,.14);border:1px solid rgba(155,110,255,.4)}
+.demobar{display:none;position:sticky;top:0;z-index:60;background:repeating-linear-gradient(-45deg,#9B6EFF 0 14px,#7B4FE0 14px 28px);color:#fff;text-align:center;font-size:12.5px;font-weight:600;padding:7px 12px;letter-spacing:.3px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+body.demo-on .demobar{display:block}
 .rolecard h3{font-size:17px;font-weight:600}
 .rolecard p{font-size:13px;color:var(--sub);margin-top:2px}
 .rolecard .arrow{margin-left:auto;color:var(--mut);font-size:20px}
@@ -333,6 +336,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <div class="app" id="appShell">
 
   <!-- ============ CLOCK BAR ============ -->
+  <div class="demobar" id="demoBar">🧪 โหมด DEMO — ข้อมูลทดสอบ ไม่ใช่ของจริง</div>
   <div class="clockbar" id="clockbar" style="display:none">
     <div class="row">
       <div class="brand">WFDC<br>CONTAINER LOADING<small id="roleLabel"></small></div>
@@ -375,6 +379,21 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div><h3>Warehouse Admin</h3><p>Dashboard · ดึงข้อมูลย้อนหลัง · Export</p></div>
         <div class="arrow">›</div>
       </div>
+      <div class="rolecard demo" style="animation-delay:.32s" onclick="showDemoForm()">
+        <div class="ic">🧪</div>
+        <div><h3>Demo (ทดสอบ)</h3><p>ทดลองใช้งาน — ข้อมูลแยก ไม่กระทบของจริง</p></div>
+        <div class="arrow">›</div>
+      </div>
+    </div>
+    <div class="login-form" id="demoForm" style="display:none">
+      <h3>🧪 เข้าโหมด Demo</h3>
+      <div class="fgroup">
+        <label class="f">รหัสผ่าน</label>
+        <input type="password" id="inDemoPass" placeholder="••••••" autocomplete="off">
+        <div class="err" id="demoErr">รหัสผ่านไม่ถูกต้อง</div>
+      </div>
+      <button class="btn btn-amber" id="btnDemoLogin" onclick="loginDemo()">เข้าสู่โหมด Demo</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="backToRoles()">ย้อนกลับ</button>
     </div>
     <div class="login-form" id="loaderForm" style="display:none">
       <h3 id="userFormTitle">📦 เข้าใช้งานแบบ Loader</h3>
@@ -576,6 +595,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <p class="listhead">Trip ล่าสุด</p>
       <div class="triplist" id="tripList"></div>
       </div>
+      <div id="demoTools" style="display:none;margin-top:18px">
+        <div class="card" style="border-color:rgba(155,110,255,.4)">
+          <h2>เครื่องมือ Demo <span class="tag" style="background:rgba(155,110,255,.15);color:#9B6EFF">TEST</span></h2>
+          <p class="hint" style="margin-bottom:10px">ลบ Trip และรูปทดสอบทั้งหมดในโหมด Demo — ข้อมูลจริงไม่ถูกแตะต้อง</p>
+          <button class="btn btn-ghost btn-sm" id="btnClearDemo" style="width:100%" onclick="clearDemoData()">🗑️ ล้างข้อมูล Demo ทั้งหมด</button>
+        </div>
+      </div>
     </div>
 
     <!-- export -->
@@ -649,6 +675,7 @@ var S = {
   role: null, name: '', adminToken: '',
   dir: 'out',            // ขาของ user (out=Loader, in=Receiver) และขาที่ admin กำลังดู
   expDir: 'out',         // ขาที่หน้า export กำลังเลือก
+  demo: false,           // โหมดทดสอบ — ข้อมูลแยกจากของจริง
   photos: [],
   truckSize: '',
   stores: [],
@@ -674,6 +701,7 @@ var THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.',
 /* ================= API ================= */
 function api(payload, opt) {
   opt = opt || {};
+  if (S.demo && payload && !payload.demo) payload.demo = 1;   // โหมด Demo — backend สลับไปใช้ sheet/โฟลเดอร์ชุดทดสอบ
   var timeoutMs = opt.timeout || 30000;
   var retries = opt.retries != null ? opt.retries : 0;
   function attempt(left) {
@@ -769,16 +797,37 @@ function showAdminForm() {
   document.getElementById('roleSelect').style.display = 'none';
   document.getElementById('adminForm').style.display = 'block';
 }
+function showDemoForm() {
+  document.getElementById('roleSelect').style.display = 'none';
+  document.getElementById('demoForm').style.display = 'block';
+  document.getElementById('inDemoPass').focus();
+}
+function loginDemo() {
+  var pass = document.getElementById('inDemoPass').value;
+  var btn = document.getElementById('btnDemoLogin');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังตรวจสอบ...';
+  api({ action: 'demoLogin', password: pass }).then(function (res) {
+    btn.disabled = false; btn.textContent = 'เข้าสู่โหมด Demo';
+    if (!res.ok) { document.getElementById('demoErr').classList.add('on'); return; }
+    document.getElementById('demoErr').classList.remove('on');
+    S.role = 'admin'; S.name = 'Demo User'; S.adminToken = res.token; S.dir = 'out'; S.demo = true;
+    document.body.classList.add('demo-on');
+    sessionStorage.setItem('wfdc_sess', JSON.stringify({ role: 'admin', name: S.name, token: res.token, demo: true }));
+    document.getElementById('appShell').classList.add('wide');
+    enterApp(); show('v-admin'); initDashDates(); applyDirTabUI(); loadDashboard();
+  }).catch(function () { btn.disabled = false; btn.textContent = 'เข้าสู่โหมด Demo'; toast('เชื่อมต่อไม่สำเร็จ', true); });
+}
 function backToRoles() {
   document.getElementById('roleSelect').style.display = 'block';
   document.getElementById('loaderForm').style.display = 'none';
   document.getElementById('adminForm').style.display = 'none';
+  document.getElementById('demoForm').style.display = 'none';
 }
 function enterApp() {
   document.getElementById('clockbar').style.display = 'block';
   document.getElementById('userchip').style.display = 'flex';
   document.getElementById('whoName').textContent = S.name;
-  document.getElementById('roleLabel').textContent = S.role === 'admin' ? 'WAREHOUSE ADMIN' : DIRCFG[S.dir].userLabel;
+  document.getElementById('roleLabel').textContent = S.role === 'admin' ? (S.demo ? '🧪 DEMO MODE' : 'WAREHOUSE ADMIN') : DIRCFG[S.dir].userLabel;
   document.getElementById('btnBackAdmin').style.display = S.role === 'admin' ? 'inline-flex' : 'none';
   document.getElementById('btnSuccBack').style.display = S.role === 'admin' ? 'flex' : 'none';
   loadStores();
@@ -814,6 +863,7 @@ function logout() {
     var sess = JSON.parse(sessionStorage.getItem('wfdc_sess') || 'null');
     if (!sess) return;
     S.role = sess.role; S.name = sess.name; S.adminToken = sess.token || ''; S.dir = sess.dir || 'out';
+    S.demo = !!sess.demo; if (S.demo) document.body.classList.add('demo-on');
     if (sess.role === 'admin') {
       document.getElementById('appShell').classList.add('wide');
       enterApp(); show('v-admin'); initDashDates(); applyDirTabUI(); loadDashboard();
@@ -1173,6 +1223,7 @@ function applyDirTabUI() {
   document.getElementById('dirIn').classList.toggle('on', S.dir === 'in');
   document.getElementById('dirPicking').classList.toggle('on', S.dir === 'picking');
   document.getElementById('allView').style.display = isAll ? 'block' : 'none';
+  document.getElementById('demoTools').style.display = S.demo ? 'block' : 'none';
   document.getElementById('deptView').style.display = isAll ? 'none' : 'block';
   document.getElementById('stTripsLbl').textContent = isAll ? 'Trip รวมทุกแผนก' : 'Trip ทั้งหมด';
   document.getElementById('stTrucksLbl').textContent = (S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า';
@@ -1186,6 +1237,18 @@ function switchDir(dir) {
   S.dir = dir;
   applyDirTabUI();
   loadDashboard();
+}
+function clearDemoData() {
+  if (!S.demo) return;
+  if (!confirm('ลบ Trip และรูปทดสอบทั้งหมดในโหมด Demo?\n(ข้อมูลจริงไม่ถูกแตะต้อง)')) return;
+  var btn = document.getElementById('btnClearDemo');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังล้าง...';
+  api({ action: 'clearDemoData', token: S.adminToken }, { retries: 1, timeout: 60000 }).then(function (res) {
+    btn.disabled = false; btn.textContent = '🗑️ ล้างข้อมูล Demo ทั้งหมด';
+    if (!res.ok) { toast('ล้างข้อมูลไม่สำเร็จ', true); return; }
+    toast('ล้างข้อมูล Demo แล้ว (' + res.cleared.trips + ' trip)');
+    loadDashboard(true);
+  }).catch(function () { btn.disabled = false; btn.textContent = '🗑️ ล้างข้อมูล Demo ทั้งหมด'; toast('ล้างข้อมูลไม่สำเร็จ', true); });
 }
 function loadDashboard(force) {
   var from = document.getElementById('dashFrom').value;
