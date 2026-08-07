@@ -329,6 +329,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* admin nav */
 .adminnav{display:flex;gap:8px;margin-top:14px}
 .adminnav .tab{font-size:13px}
+.langbtn{
+  position:fixed;bottom:78px;right:18px;z-index:90;width:48px;height:48px;border-radius:50%;
+  background:var(--panel);border:1px solid var(--line2);color:var(--txt);font-size:13px;font-weight:700;
+  cursor:pointer;box-shadow:var(--shadow);transition:transform .15s,background .3s;
+  display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+}
+.langbtn:active{transform:scale(.92)}
 .themebtn{
   position:fixed;bottom:22px;right:18px;z-index:90;width:48px;height:48px;border-radius:50%;
   background:var(--panel);border:1px solid var(--line2);color:var(--txt);font-size:21px;
@@ -681,6 +688,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 </div>
 
+<button class="langbtn" id="langBtn" onclick="toggleLang()" title="Switch language / สลับภาษา">EN</button>
 <button class="themebtn" id="themeBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">☀️</button>
 
 <div class="toast" id="toast"></div>
@@ -709,6 +717,226 @@ var S = {
   exportTrips: [],
   modalFolder: '', modalOffset: 0, modalTotal: 0
 };
+/* ================= i18N: ไทย / English =================
+ * เก็บข้อมูลใน Sheet/Drive เป็นภาษาไทยเสมอ — แปลเฉพาะตอนแสดงผลบนหน้าเว็บ
+ * ใช้ข้อความไทยเป็น key: ถ้าไม่มีคำแปลจะ fallback เป็นไทยเองอัตโนมัติ */
+var LANG = localStorage.getItem('wfdc_lang') || 'th';
+var EN = {
+  /* --- login --- */
+  'ระบบบันทึกภาพโหลดสินค้าเข้าตู้คอนเทนเนอร์': 'Container loading photo log system',
+  'โหลดสินค้าขึ้นรถส่ง Store — บันทึกและอัพโหลดรูป': 'Load goods onto trucks to stores — record & upload photos',
+  'รับของจาก Supplier เข้าคลัง — บันทึกและอัพโหลดรูป': 'Receive goods from suppliers — record & upload photos',
+  'ตรวจสอบสินค้าก่อนโหลด — บันทึกและอัพโหลดรูป': 'QC check before loading — record & upload photos',
+  'Dashboard · ดึงข้อมูลย้อนหลัง · Export': 'Dashboard · History · Export',
+  'Demo (ทดสอบ)': 'Demo (Test)',
+  'ทดลองใช้งาน — ข้อมูลแยก ไม่กระทบของจริง': 'Try it out — separate data, production untouched',
+  '📦 เข้าใช้งานแบบ Loader': '📦 Sign in as Loader',
+  '📥 เข้าใช้งานแบบ Receiver': '📥 Sign in as Receiver',
+  '✅ เข้าใช้งานแบบ Picking': '✅ Sign in as Picking',
+  '🗂️ เข้าใช้งานแบบ Warehouse Admin': '🗂️ Sign in as Warehouse Admin',
+  '🧪 เข้าโหมด Demo': '🧪 Enter Demo mode',
+  'ชื่อผู้โหลด': 'Loader name', 'ชื่อผู้รับของ': 'Receiver name', 'ชื่อผู้ตรวจ (QC)': 'QC inspector name',
+  'เช่น สมชาย ใจดี': 'e.g. Somchai Jaidee', 'เช่น สมหญิง รักงาน': 'e.g. Somying Rakngan',
+  'เริ่มทำงาน': 'Start', 'ย้อนกลับ': 'Back',
+  'รหัสผ่าน': 'Password', 'รหัสผ่านไม่ถูกต้อง': 'Incorrect password',
+  'เข้าสู่ระบบ': 'Sign in', 'เข้าสู่โหมด Demo': 'Enter Demo mode',
+  'ผู้ใช้งาน:': 'User:', 'ออกจากระบบ': 'Sign out',
+  /* --- upload form --- */
+  'ข้อมูลเที่ยวขนส่ง': 'Trip details', 'ข้อมูลการรับของ': 'Receiving details', 'ข้อมูล Picking Complete': 'Picking Complete details',
+  'เลขทะเบียนรถ': 'Plate number', 'เช่น 82-1234 อยุธยา': 'e.g. 82-1234 Ayutthaya',
+  'Store ปลายทาง': 'Destination store', '— เลือก Store —': '— Select store —',
+  'Supplier (ผู้ส่งของ)': 'Supplier', 'พิมพ์ชื่อ/รหัส Supplier': 'Type supplier name / code',
+  'เลข Load Manifest': 'Load manifest no.', 'เช่น LM-20260728-001': 'e.g. LM-20260728-001',
+  'เลข PO / Invoice / DO': 'PO / Invoice / DO no.', 'เช่น PO-2026072800': 'e.g. PO-2026072800',
+  'Outbound Label': 'Outbound label', 'เช่น OB-20260806-001': 'e.g. OB-20260806-001',
+  'เลขนี้ถูกใช้ไปแล้ว': 'This number is already used',
+  'เลข Manifest นี้ถูกใช้ไปแล้ว': 'This manifest number is already used',
+  'เลขเอกสารนี้ถูกใช้ไปแล้ว': 'This document number is already used',
+  'Outbound Label นี้ถูกใช้ไปแล้ว': 'This outbound label is already used',
+  'ขนาดรถขนส่ง': 'Truck size', 'ล้อ': 'wheels',
+  'รูปภาพการโหลด': 'Loading photos', 'รูปภาพ': 'PHOTOS',
+  'ถ่ายรูป': 'Take photo', 'เลือกจากคลัง': 'Choose from gallery',
+  'สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง':
+    'Up to 80 photos · 2560px HQ · ~500-800KB each — tap again to keep adding photos',
+  'สูงสุด 80 รูป — โหมด Demo: ถ่ายแล้วรูปทยอยอัพโหลดเองอัตโนมัติ ไม่ต้องรอตอนจบ':
+    'Up to 80 photos — Demo mode: photos upload automatically as you shoot, no waiting at the end',
+  'เลือกแล้ว': 'Selected', '/ 80 รูป': '/ 80 photos', 'ล้างทั้งหมด': 'Clear all',
+  'กำลังเตรียม...': 'Preparing...',
+  '🚚 บันทึกและอัพโหลด': '🚚 Save & upload',
+  '▶️ เริ่มถ่ายรูป (สร้าง Trip)': '▶️ Start shooting (create trip)',
+  '✅ เสร็จสิ้น — ปิด Trip': '✅ Finish — close trip',
+  'ยกเลิก Trip นี้': 'Cancel this trip', 'พร้อมถ่ายรูป': 'Ready to shoot',
+  '← กลับ Dashboard': '← Back to dashboard', 'กลับ Dashboard': 'Back to dashboard',
+  /* --- success --- */
+  'บันทึก Trip สำเร็จ': 'Trip saved successfully',
+  '＋ บันทึก Trip ถัดไป': '＋ Record next trip',
+  'เวลาบันทึก (ระบบ)': 'Recorded at (server)', 'Manifest': 'Manifest', 'เลขเอกสาร': 'Document no.',
+  'ทะเบียน': 'Plate', 'Store': 'Store', 'Supplier': 'Supplier', 'ขนาดรถ': 'Truck size', 'จำนวนรูป': 'Photos',
+  /* --- admin tabs --- */
+  '📊 Dashboard': '📊 Dashboard', '📥 ดึงข้อมูลย้อนหลัง': '📥 History', '📦 อัพโหลดแทน': '📦 Upload for staff',
+  '📤 อัพโหลด Outbound': '📤 Upload Outbound', '📥 อัพโหลด Inbound': '📥 Upload Inbound', '✅ อัพโหลด Picking': '✅ Upload Picking',
+  /* --- dashboard --- */
+  'จากวันที่': 'From date', 'ถึงวันที่': 'To date', '🔄 โหลดข้อมูล': '🔄 Load data',
+  'Trip ทั้งหมด': 'Total trips', 'Trip รวมทุกแผนก': 'Total trips (all)', 'รูปทั้งหมด': 'Total photos',
+  'รถที่เข้า': 'Trucks', 'Store ที่ตรวจ': 'Stores checked',
+  'เทียบแผนกับจริง': 'Plan vs actual', 'ทำได้/แผน': 'actual/plan', 'จริง — / แผน —': 'actual — / plan —',
+  'ตั้งแผนรายวัน': 'Set daily plan', 'แผน Outbound': 'Outbound plan', 'แผน Inbound': 'Inbound plan', 'แผน Picking': 'Picking plan',
+  '💾 บันทึกแผน': '💾 Save plan',
+  '✅ บันทึกแล้ว — ตั้งแผนวันอื่นต่อได้ เสร็จแล้วกด': '✅ Saved — set other days, then press',
+  'ด้านบนเพื่อแสดงผลรวม': 'above to refresh totals',
+  'Trip ต่อวัน — แผน vs จริง': 'Trips per day — plan vs actual', 'แผน': 'Plan', 'จริง': 'Actual',
+  'เลือกช่วงวันที่แล้วกดโหลดข้อมูล': 'Pick a date range then load data',
+  'สาขาที่มี Trip มากที่สุด': 'Top stores by trips', 'Supplier ที่ส่ง Trip มากที่สุด': 'Top suppliers by trips',
+  'ยังไม่มีข้อมูล': 'No data yet', 'Trip ล่าสุด': 'Recent trips',
+  'ไม่มี Trip ในช่วงที่เลือก': 'No trips in the selected range',
+  'ไม่มีข้อมูลในช่วงที่เลือก': 'No data in the selected range',
+  'เครื่องมือ Demo': 'Demo tools',
+  'ลบ Trip และรูปทดสอบทั้งหมดในโหมด Demo — ข้อมูลจริงไม่ถูกแตะต้อง':
+    'Delete all demo trips and photos — production data is untouched',
+  '🗑️ ล้างข้อมูล Demo ทั้งหมด': '🗑️ Clear all demo data',
+  '🧪 โหมด DEMO — ข้อมูลทดสอบ ไม่ใช่ของจริง': '🧪 DEMO MODE — test data, not production',
+  /* --- export --- */
+  'ดึงข้อมูลย้อนหลัง': 'History & export', 'วันเดียว': 'Single day', 'ช่วงวันที่': 'Date range',
+  'Store (ไม่บังคับ)': 'Store (optional)', 'ทุก Store': 'All stores',
+  'ค้นหา ทะเบียนรถ / เลข Manifest (ไม่บังคับ)': 'Search plate / manifest no. (optional)',
+  'ค้นหา ทะเบียนรถ / เลข PO-Invoice-DO (ไม่บังคับ)': 'Search plate / PO-Invoice-DO (optional)',
+  'ค้นหา Outbound Label (ไม่บังคับ)': 'Search outbound label (optional)',
+  'เช่น 82-1234 หรือ LM-2026...': 'e.g. 82-1234 or LM-2026...',
+  'ถ้ากรอกช่องนี้ ระบบจะค้นจากทุกวันที่ให้อัตโนมัติ': 'If filled, all dates are searched automatically',
+  '🔍 ค้นหาข้อมูล': '🔍 Search', 'เลือกทั้งหมด': 'Select all',
+  '📄 ดาวน์โหลด PDF': '📄 Download PDF', '🖼️ ดาวน์โหลด ZIP': '🖼️ Download ZIP',
+  'โหลดรูปเพิ่ม': 'Load more photos', 'กำลังโหลด...': 'Loading...',
+  'กำลังโหลดรายการ...': 'Loading list...', 'โหลดรายการไม่สำเร็จ': 'Failed to load list',
+  'โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่': 'Failed to load — try again'
+};
+
+/* tr(): แปลข้อความ runtime — รองรับข้อความที่มีตัวเลขปน โดยจับคู่ pattern */
+var EN_PAT = [
+  [/^เลือกอย่างน้อย 1 trip ก่อน$/, 'Select at least 1 trip first'],
+  [/^กรุณากรอกชื่อ$/, 'Please enter your name'],
+  [/^กรอกเลขทะเบียนรถก่อน$/, 'Enter plate number first'],
+  [/^กรอกเลขเอกสารก่อน$/, 'Enter document number first'],
+  [/^กรอก Outbound Label ก่อน$/, 'Enter outbound label first'],
+  [/^เลือก Store ก่อน$/, 'Select a store first'],
+  [/^เลือกขนาดรถก่อน$/, 'Select truck size first'],
+  [/^เลือกรูปอย่างน้อย 1 รูป$/, 'Select at least 1 photo'],
+  [/^เลือกวันที่ก่อน$/, 'Select a date first'],
+  [/^เลือกวันที่ หรือกรอกคำค้นหาก่อน$/, 'Pick a date or enter a search term'],
+  [/^เลขเอกสารซ้ำ$/, 'Duplicate document number'],
+  [/^เชื่อมต่อ server ไม่ได้$/, 'Cannot reach server'],
+  [/^เชื่อมต่อไม่สำเร็จ$/, 'Connection failed'],
+  [/^Session หมดอายุ — เข้าสู่ระบบใหม่$/, 'Session expired — please sign in again'],
+  [/^สร้าง Trip แล้ว เริ่มถ่ายรูปได้เลย$/, 'Trip created — you can start shooting'],
+  [/^ยกเลิก Trip แล้ว$/, 'Trip cancelled'],
+  [/^ยังไม่มีรูปเลย ถ่ายอย่างน้อย 1 รูปก่อน$/, 'No photos yet — take at least 1 photo'],
+  [/^พร้อมถ่ายรูป — รูปจะทยอยอัพโหลดเองอัตโนมัติ$/, 'Ready — photos will upload automatically'],
+  [/^กำลังปิด Trip\.\.\.$/, 'Closing trip...'],
+  [/^กำลังสร้าง Trip\.\.\.$/, 'Creating trip...'],
+  [/^ย่อรูปเสร็จแล้ว$/, 'Photos resized'],
+  [/^เสร็จแล้ว$/, 'Done'],
+  [/^ดาวน์โหลด PDF เรียบร้อย$/, 'PDF downloaded'],
+  [/^โหลดรูปไม่สำเร็จ$/, 'Failed to load photos'],
+  [/^โหลด Dashboard ไม่สำเร็จ$/, 'Failed to load dashboard'],
+  [/^โหลดข้อมูลรวมไม่สำเร็จ$/, 'Failed to load summary'],
+  [/^บันทึกแผนไม่สำเร็จ$/, 'Failed to save plan'],
+  [/^ล้างข้อมูลไม่สำเร็จ$/, 'Failed to clear data'],
+  [/^ส่งไฟล์ครบแล้ว — ดูแถบดาวน์โหลดของเบราว์เซอร์$/, 'All files sent — check your browser downloads'],
+  [/^เกิดข้อผิดพลาดระหว่างสร้าง PDF$/, 'Error while creating PDF'],
+  [/^สร้าง ZIP ไม่สำเร็จ: (.+)$/, 'ZIP failed: $1'],
+  [/^เกิดข้อผิดพลาด: (.+)$/, 'Error: $1'],
+  [/^สร้าง Trip ไม่สำเร็จ: (.+)$/, 'Failed to create trip: $1'],
+  [/^ปิด Trip ไม่สำเร็จ: (.+)$/, 'Failed to close trip: $1'],
+  [/^ปิด Trip ไม่สำเร็จ — กดเสร็จสิ้นอีกครั้ง$/, 'Failed to close trip — press Finish again'],
+  [/^กำลังย่อรูป (\d+)\/(\d+)$/, 'Resizing $1/$2'],
+  [/^อัพโหลดรูป (\d+)\/(\d+)$/, 'Uploading $1/$2'],
+  [/^อัพโหลดแล้ว (\d+) รูป$/, 'Uploaded $1 photos'],
+  [/^อัพโหลดแล้ว (\d+) รูป · เหลือในคิว (\d+)$/, 'Uploaded $1 photos · $2 queued'],
+  [/^กำลังอัพโหลด (\d+) รูป\.\.\. \(ส่งแล้ว (\d+)\)$/, 'Uploading $1 photos... (sent $2)'],
+  [/^รออีก (\d+) รูปจะอัพโหลดชุดถัดไป · ส่งแล้ว (\d+) รูป$/, '$1 more photo(s) until next upload · $2 sent'],
+  [/^กำลังส่งรูปที่เหลือ (\d+) รูป\.\.\.$/, 'Sending remaining $1 photos...'],
+  [/^บันทึกแผน (.+) แล้ว · ตั้งวันอื่นต่อได้ แล้วกด 🔄 โหลดข้อมูล$/, 'Plan for $1 saved · set other days, then press 🔄 Load data'],
+  [/^ล้างข้อมูล Demo แล้ว \((\d+) trip\)$/, 'Demo data cleared ($1 trips)'],
+  [/^สร้าง ZIP ครบ (\d+) trip$/, 'Created ZIP for $1 trip(s)'],
+  [/^เกินจำนวนสูงสุด — เพิ่มได้อีก (\d+) รูป$/, 'Limit reached — you can add $1 more'],
+  [/^อัพโหลดสะดุด — จะลองใหม่อัตโนมัติ \(ครั้งที่ (\d+)\)$/, 'Upload hiccup — retrying automatically (attempt $1)'],
+  [/^อัพโหลดไม่สำเร็จ — กดบันทึกอีกครั้ง \(รูปที่อัพแล้วไม่ต้องอัพซ้ำ\)$/, 'Upload failed — press save again (uploaded photos are kept)'],
+  [/^อัพโหลดไม่สำเร็จหลายครั้ง — เช็คสัญญาณแล้วกดเสร็จสิ้นเพื่อลองใหม่$/, 'Upload failed repeatedly — check signal then press Finish to retry'],
+  [/^ปิด Trip ไม่สำเร็จ \((.+)\) — รูปอัพครบแล้ว กดเสร็จสิ้นอีกครั้งได้$/, 'Failed to close trip ($1) — photos are uploaded, press Finish again'],
+  [/^ปิด Trip ไม่สำเร็จ — รูปอัพครบแล้ว กดเสร็จสิ้นอีกครั้งได้$/, 'Failed to close trip — photos are uploaded, press Finish again']
+];
+
+/* เวลาจาก server เก็บเป็นไทยเสมอ — แปลงตอนแสดงผลเท่านั้น
+ * "00:30 (คืนวันที่ 17)" → "00:30 (night of 17)" | "13:38 น." → "13:38" */
+function trTime(v) {
+  if (LANG !== 'en' || !v) return v;
+  return String(v)
+    .replace(/\(คืนวันที่\s*(\d+)\)/, '(night of $1)')
+    .replace(/\s*น\.$/, '');
+}
+
+function tr(str) {
+  if (LANG !== 'en' || typeof str !== 'string') return str;
+  if (EN[str]) return EN[str];
+  for (var i = 0; i < EN_PAT.length; i++) {
+    if (EN_PAT[i][0].test(str)) return str.replace(EN_PAT[i][0], EN_PAT[i][1]);
+  }
+  return str;
+}
+
+function t(str) {
+  if (LANG !== 'en' || str == null) return str;
+  return EN[str] || str;
+}
+/* แปลข้อความในหน้าเว็บทั้งหมด — เก็บต้นฉบับไทยไว้ที่ data-th ครั้งแรก */
+function applyLang() {
+  var root = document.body;
+  // text nodes
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null, false);
+  var el;
+  while ((el = walker.nextNode())) {
+    for (var i = 0; i < el.childNodes.length; i++) {
+      var n = el.childNodes[i];
+      if (n.nodeType !== 3) continue;                       // text node เท่านั้น
+      var raw = n.nodeValue, key = raw.trim();
+      if (!key) continue;
+      if (!n.__th) n.__th = raw;                            // จำต้นฉบับไทย
+      var src = n.__th.trim();
+      var out = (LANG === 'en') ? (EN[src] || src) : src;
+      n.nodeValue = n.__th.replace(src, out);
+    }
+    // placeholder / title
+    ['placeholder', 'title'].forEach(function (attr) {
+      if (!el.hasAttribute(attr)) return;
+      var dataKey = '__' + attr;
+      if (!el[dataKey]) el[dataKey] = el.getAttribute(attr);
+      var s0 = el[dataKey];
+      el.setAttribute(attr, LANG === 'en' ? (EN[s0] || s0) : s0);
+    });
+    // option ใน select (ที่ generate จาก JS จะถูกแปลตอนสร้าง)
+    if (el.tagName === 'OPTION' && el.value === '') {
+      if (!el.__th0) el.__th0 = el.textContent;
+      el.textContent = LANG === 'en' ? (EN[el.__th0] || el.__th0) : el.__th0;
+    }
+  }
+  document.getElementById('langBtn').textContent = (LANG === 'en') ? 'ไทย' : 'EN';
+  document.documentElement.lang = LANG;
+}
+function toggleLang() {
+  LANG = (LANG === 'en') ? 'th' : 'en';
+  localStorage.setItem('wfdc_lang', LANG);
+  applyLang();
+  refreshDynamicText();
+  if (typeof tick === 'function') tick();
+}
+/* ข้อความที่ JS สร้างขึ้น ต้อง render ใหม่เมื่อเปลี่ยนภาษา */
+function refreshDynamicText() {
+  try {
+    if (typeof applyUploadForm === 'function' && S.role) applyUploadForm();
+    if (typeof applyDirTabUI === 'function' && S.role === 'admin') applyDirTabUI();
+    updatePhotoMeta();
+  } catch (e) {}
+}
+
 var DIRTAG = { out: 'OUTBOUND', 'in': 'INBOUND', picking: 'PICKING' };
 var AUTO = { on: false, tripId: '', folderId: '', serverTime: null, nextIdx: 0, sent: 0, queue: [], busy: false, failed: 0 };
 var AUTO_CHUNK = 3;
@@ -726,6 +954,8 @@ var DIRCFG = {
          dupMsg: 'Outbound Label นี้ถูกใช้ไปแล้ว' }
 };
 var THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+var EN_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var EN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 /* ================= API ================= */
@@ -763,8 +993,14 @@ function tick() {
   document.getElementById('clkTime').innerHTML = pad(h) + ':' + pad(m) + '<span class="sec">:' + pad(s) + '</span>';
   var isNight = h < CUTOFF_HOUR;
   var biz = new Date(n.getTime() - (isNight ? 86400000 : 0));
-  var dateStr = 'วัน' + THAI_DAYS[n.getDay()] + ' ' + n.getDate() + ' ' + THAI_MONTHS[n.getMonth()] + ' ' + (n.getFullYear() + 543);
-  if (isNight) dateStr += ' · <span class="night">คืนวันที่ ' + biz.getDate() + '</span>';
+  var dateStr;
+  if (LANG === 'en') {
+    dateStr = EN_DAYS[n.getDay()] + ' ' + n.getDate() + ' ' + EN_MONTHS[n.getMonth()] + ' ' + n.getFullYear();
+    if (isNight) dateStr += ' · <span class="night">night of ' + biz.getDate() + '</span>';
+  } else {
+    dateStr = 'วัน' + THAI_DAYS[n.getDay()] + ' ' + n.getDate() + ' ' + THAI_MONTHS[n.getMonth()] + ' ' + (n.getFullYear() + 543);
+    if (isNight) dateStr += ' · <span class="night">คืนวันที่ ' + biz.getDate() + '</span>';
+  }
   document.getElementById('clkDate').innerHTML = dateStr;
 }
 setInterval(tick, 1000); tick();
@@ -788,7 +1024,7 @@ function toggleTheme() {
 var toastTimer;
 function toast(msg, bad) {
   var t = document.getElementById('toast');
-  t.textContent = msg;
+  t.textContent = tr(msg);
   t.className = 'toast on' + (bad ? ' bad' : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function () { t.className = 'toast'; }, 3200);
@@ -803,8 +1039,8 @@ function show(id) {
 function chooseUserRole(dir) {
   S.dir = dir;
   var c = DIRCFG[dir];
-  document.getElementById('userFormTitle').textContent = c.formTitle;
-  document.getElementById('userNameLabel').textContent = c.nameLabel;
+  document.getElementById('userFormTitle').textContent = t(c.formTitle);
+  document.getElementById('userNameLabel').textContent = t(c.nameLabel);
   document.getElementById('inLoaderName').placeholder = dir === 'in' ? 'เช่น สมหญิง รักงาน' : 'เช่น สมชาย ใจดี';
   document.getElementById('roleSelect').style.display = 'none';
   document.getElementById('loaderForm').style.display = 'block';
@@ -812,11 +1048,11 @@ function chooseUserRole(dir) {
 }
 function applyUploadForm() {
   var c = DIRCFG[S.dir];
-  document.getElementById('tripCardTitle').firstChild.nodeValue = c.cardTitle + ' ';
+  document.getElementById('tripCardTitle').firstChild.nodeValue = t(c.cardTitle) + ' ';
   document.getElementById('tripCardTag').textContent = c.cardTag;
-  document.getElementById('docLabel').textContent = c.docLabel;
-  document.getElementById('fManifest').placeholder = c.docPh;
-  document.getElementById('manErr').textContent = c.dupMsg;
+  document.getElementById('docLabel').textContent = t(c.docLabel);
+  document.getElementById('fManifest').placeholder = t(c.docPh);
+  document.getElementById('manErr').textContent = t(c.dupMsg);
   var isPick = (S.dir === 'picking');
   document.getElementById('storeGroup').style.display = (S.dir === 'out' || isPick) ? 'block' : 'none';
   document.getElementById('supplierGroup').style.display = S.dir === 'in' ? 'block' : 'none';
@@ -826,9 +1062,9 @@ function applyUploadForm() {
   var auto = !!S.demo;
   document.getElementById('btnSubmit').style.display = auto ? 'none' : 'block';
   if (!AUTO.on) autoUIMode(false);
-  document.getElementById('camhint').textContent = auto
+  document.getElementById('camhint').textContent = t(auto
     ? 'สูงสุด 80 รูป — โหมด Demo: ถ่ายแล้วรูปทยอยอัพโหลดเองอัตโนมัติ ไม่ต้องรอตอนจบ'
-    : 'สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง';
+    : 'สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง');
 }
 function showAdminForm() {
   document.getElementById('roleSelect').style.display = 'none';
@@ -951,6 +1187,9 @@ function loadStores(attempt) {
   loadStores();
 })();
 
+/* ตั้งภาษาตอนเปิดหน้า (ค่าเริ่มต้น: ภาษาที่เลือกไว้ครั้งก่อน) */
+applyLang();
+
 /* ================= TRUCK TILES ================= */
 document.getElementById('truckTiles').addEventListener('click', function (e) {
   var tile = e.target.closest('.truck');
@@ -1071,7 +1310,7 @@ function blobToBase64(blob) {
 function autoStatus(text, cls) {
   var wrap = document.getElementById('autoStat');
   wrap.style.display = 'flex';
-  document.getElementById('autoStatText').textContent = text;
+  document.getElementById('autoStatText').textContent = tr(text);
   var dot = document.getElementById('autoDot');
   dot.className = 'dot' + (cls ? ' ' + cls : '');
 }
@@ -1318,7 +1557,7 @@ function showSuccess(serverTime, count) {
   }
   var docLbl = isPick ? 'Outbound Label' : (S.dir === 'in' ? 'เลขเอกสาร' : 'Manifest');
   meta.innerHTML =
-    '<div><span>เวลาบันทึก (ระบบ)</span><b>' + (serverTime ? serverTime.displayTime : '-') + '</b></div>' +
+    '<div><span>เวลาบันทึก (ระบบ)</span><b>' + (serverTime ? trTime(serverTime.displayTime) : '-') + '</b></div>' +
     '<div><span>' + docLbl + '</span><b>' + document.getElementById('fManifest').value.trim() + '</b></div>' +
     (isPick ? '' : '<div><span>ทะเบียน</span><b>' + document.getElementById('fPlate').value.trim() + '</b></div>') +
     partyRow +
@@ -1409,12 +1648,12 @@ function applyDirTabUI() {
   document.getElementById('allView').style.display = isAll ? 'block' : 'none';
   document.getElementById('demoTools').style.display = S.demo ? 'block' : 'none';
   document.getElementById('deptView').style.display = isAll ? 'none' : 'block';
-  document.getElementById('stTripsLbl').textContent = isAll ? 'Trip รวมทุกแผนก' : 'Trip ทั้งหมด';
-  document.getElementById('stTrucksLbl').textContent = (S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า';
+  document.getElementById('stTripsLbl').textContent = t(isAll ? 'Trip รวมทุกแผนก' : 'Trip ทั้งหมด');
+  document.getElementById('stTrucksLbl').textContent = t((S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า');
   if (!isAll) {
     document.getElementById('planTag').textContent = DIRTAG[S.dir] || 'OUTBOUND';
     document.getElementById('topTitle').firstChild.nodeValue =
-      (S.dir === 'in' ? 'Supplier ที่ส่ง Trip มากที่สุด ' : 'สาขาที่มี Trip มากที่สุด ');
+      t(S.dir === 'in' ? 'Supplier ที่ส่ง Trip มากที่สุด' : 'สาขาที่มี Trip มากที่สุด') + ' ';
   }
 }
 function switchDir(dir) {
@@ -1460,7 +1699,7 @@ function loadDashboard(force) {
     // รายการ trip โหลดแยกทีหลัง ไม่ถ่วงกราฟให้ขึ้นช้า
     loadRecentTrips(from, to, force);
   }).catch(function () {
-    document.getElementById('dayBars').innerHTML = '<div class="empty">โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่</div>';
+    document.getElementById('dayBars').innerHTML = '<div class="empty">' + t('โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่') + '</div>';
     toast('โหลด Dashboard ไม่สำเร็จ', true);
   });
 }
@@ -1490,16 +1729,16 @@ function renderDonutInto(key, d, color) {
   arc.style.strokeDashoffset = circ - (circ * Math.min(pct, 100) / 100);
   arc.setAttribute('stroke', pct >= 100 ? '#2DD4A7' : color);
   document.getElementById('dPct' + key).textContent = d.plan > 0 ? pct + '%' : '—';
-  document.getElementById('dInfo' + key).textContent = 'จริง ' + d.trips + ' / แผน ' + d.plan;
+  document.getElementById('dInfo' + key).textContent = (LANG==='en' ? ('actual ' + d.trips + ' / plan ' + d.plan) : ('จริง ' + d.trips + ' / แผน ' + d.plan));
 }
 function loadRecentTrips(from, to, force) {
   var wrap = document.getElementById('tripList');
   wrap.innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> กำลังโหลดรายการ...</div>';
   api({ action: 'getRecentTrips', token: S.adminToken, dir: S.dir, from: from, to: to, limit: 30 }, { retries: 2 })
     .then(function (res) {
-      if (!res.ok) { wrap.innerHTML = '<div class="empty">โหลดรายการไม่สำเร็จ</div>'; return; }
+      if (!res.ok) { wrap.innerHTML = '<div class="empty">' + t('โหลดรายการไม่สำเร็จ') + '</div>'; return; }
       renderTrips(res.trips);
-    }).catch(function () { wrap.innerHTML = '<div class="empty">โหลดรายการไม่สำเร็จ</div>'; });
+    }).catch(function () { wrap.innerHTML = '<div class="empty">' + t('โหลดรายการไม่สำเร็จ') + '</div>'; });
 }
 function renderDonut(actual, plan) {
   var pct = plan > 0 ? Math.round((actual / plan) * 100) : 0;
@@ -1509,7 +1748,7 @@ function renderDonut(actual, plan) {
   arc.style.strokeDashoffset = circ - (circ * shown / 100);
   arc.setAttribute('stroke', pct >= 100 ? 'var(--teal)' : 'var(--amber)');
   document.getElementById('donutPct').textContent = plan > 0 ? pct + '%' : '—';
-  document.getElementById('donutInfo').textContent = 'จริง ' + actual + ' / แผน ' + plan;
+  document.getElementById('donutInfo').textContent = (LANG==='en' ? ('actual ' + actual + ' / plan ' + plan) : ('จริง ' + actual + ' / แผน ' + plan));
 }
 function renderBars2(perDay, perDayPlan, to) {
   var wrap = document.getElementById('dayBars');
@@ -1545,7 +1784,7 @@ function renderBars2(perDay, perDayPlan, to) {
 function renderTopStores(entries) {
   var wrap = document.getElementById('topStores');
   entries = (entries || []).slice(0, 10);
-  if (!entries.length) { wrap.innerHTML = '<div class="empty">ไม่มีข้อมูลในช่วงที่เลือก</div>'; return; }
+  if (!entries.length) { wrap.innerHTML = '<div class="empty">' + t('ไม่มีข้อมูลในช่วงที่เลือก') + '</div>'; return; }
   var max = entries[0].n || 1;
   wrap.innerHTML = '';
   entries.forEach(function (e, i) {
@@ -1563,7 +1802,7 @@ function renderTopStores(entries) {
 }
 function renderTrips(trips) {
   var wrap = document.getElementById('tripList');
-  if (!trips.length) { wrap.innerHTML = '<div class="empty">ไม่มี Trip ในช่วงที่เลือก</div>'; return; }
+  if (!trips.length) { wrap.innerHTML = '<div class="empty">' + t('ไม่มี Trip ในช่วงที่เลือก') + '</div>'; return; }
   wrap.innerHTML = '';
   trips.forEach(function (t, i) {
     var isNight = t.displayTime.indexOf('คืนวันที่') >= 0;
@@ -1576,7 +1815,7 @@ function renderTrips(trips) {
         (isNight ? '<span class="badge night-b">🌙 กะดึก</span>' : '') +
       '</div>' +
       '<div class="t2">' + (t.partyName || t.partyCode || '-') + ' · ' + t.docno + ' · ' + t.user + '</div>' +
-      '<div class="right"><div class="time">' + t.displayTime + '</div><div class="ph">📷 ' + t.photoCount + ' รูป</div></div>';
+      '<div class="right"><div class="time">' + trTime(t.displayTime) + '</div><div class="ph">📷 ' + t.photoCount + (LANG === 'en' ? '' : ' รูป') + '</div></div>';
     d.onclick = function () { openPhotoModal(t); };
     wrap.appendChild(d);
   });
@@ -1707,7 +1946,7 @@ function renderExpList(trips) {
       '<input type="checkbox" id="expchk' + i + '" checked>' +
       '<div class="info">' +
         '<div class="m">' + t.docno + (t.plate ? ' · ' + t.plate : '') + (isNight ? ' 🌙' : '') + '</div>' +
-        '<div class="s">' + t.businessDate + ' · ' + t.displayTime + ' · ' + (t.partyName || t.partyCode || '-') + (t.truckSize ? ' · ' + t.truckSize : '') + ' · ' + t.user + '</div>' +
+        '<div class="s">' + t.businessDate + ' · ' + trTime(t.displayTime) + ' · ' + (t.partyName || t.partyCode || '-') + (t.truckSize ? ' · ' + t.truckSize : '') + ' · ' + t.user + '</div>' +
       '</div>' +
       '<div class="ph">📷 ' + t.photoCount + '</div>';
     var chk = d.querySelector('input');
@@ -1802,7 +2041,7 @@ function makeHeaderImage(t) {
   var docLbl = isPick ? 'Outbound Label' : (S.expDir === 'in') ? 'เอกสาร' : 'Manifest';
   var partyLbl = (S.expDir === 'in') ? 'Supplier' : 'Store';
   c.fillText(docLbl + ': ' + t.docno + (isPick ? '' : '    ทะเบียน: ' + t.plate + '    รถ: ' + t.truckSize), 10 * u, 15.5 * u);
-  c.fillText('วันที่: ' + t.businessDate + '    เวลา: ' + t.displayTime + '    ' + partyLbl + ': ' + (t.partyName || t.partyCode || '-') + '    ผู้บันทึก: ' + t.user, 10 * u, 21.5 * u);
+  c.fillText('วันที่: ' + t.businessDate + '    เวลา: ' + trTime(t.displayTime) + '    ' + partyLbl + ': ' + (t.partyName || t.partyCode || '-') + '    ผู้บันทึก: ' + t.user, 10 * u, 21.5 * u);
   return cv.toDataURL('image/jpeg', 0.92);
 }
 
