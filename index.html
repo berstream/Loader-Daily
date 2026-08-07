@@ -1100,7 +1100,7 @@ function startAutoTrip() {
         else toast('สร้าง Trip ไม่สำเร็จ: ' + res.error, true);
         return;
       }
-      AUTO = { on: true, tripId: res.tripId, folderId: res.folderId, serverTime: res.time,
+      AUTO = { on: true, tripId: res.tripId, folderId: res.folderId, row: res.row || 0, serverTime: res.time,
                nextIdx: 0, sent: 0, queue: [], busy: false, failed: 0 };
       autoUIMode(true);
       autoStatus('พร้อมถ่ายรูป — รูปจะทยอยอัพโหลดเองอัตโนมัติ', 'ok');
@@ -1152,15 +1152,28 @@ function autoFlushDone() {
   // เรียกเมื่อคิวว่างระหว่าง finish
   if (AUTO.finishing) {
     AUTO.finishing = false;
-    api({ action: 'finalizeTrip', dir: S.dir, tripId: AUTO.tripId, photoCount: AUTO.sent }, { retries: 3 })
-      .then(function () {
+    autoStatus('กำลังปิด Trip...', 'busy');
+    api({ action: 'finalizeTrip', dir: S.dir, tripId: AUTO.tripId, row: AUTO.row, photoCount: AUTO.sent },
+        { retries: 1, timeout: 20000 })
+      .then(function (res) {
+        var btn = document.getElementById('btnFinishAuto');
+        if (!res || !res.ok) {                       // เช็คผลจริง ไม่เงียบเหมือนเดิม
+          btn.disabled = false; btn.textContent = '✅ เสร็จสิ้น — ปิด Trip';
+          AUTO.finishing = false;
+          autoStatus('ปิด Trip ไม่สำเร็จ (' + ((res && res.error) || 'ไม่ทราบสาเหตุ') + ') — รูปอัพครบแล้ว กดเสร็จสิ้นอีกครั้งได้', 'err');
+          toast('ปิด Trip ไม่สำเร็จ: ' + ((res && res.error) || 'error'), true);
+          return;
+        }
         var st = AUTO.serverTime, total = AUTO.sent;
         AUTO.on = false; autoUIMode(false);
         document.getElementById('autoStat').style.display = 'none';
+        btn.disabled = false; btn.textContent = '✅ เสร็จสิ้น — ปิด Trip';
         showSuccess(st, total);
       }).catch(function () {
         var btn = document.getElementById('btnFinishAuto');
         btn.disabled = false; btn.textContent = '✅ เสร็จสิ้น — ปิด Trip';
+        AUTO.finishing = false;
+        autoStatus('ปิด Trip ไม่สำเร็จ — รูปอัพครบแล้ว กดเสร็จสิ้นอีกครั้งได้', 'err');
         toast('ปิด Trip ไม่สำเร็จ — กดเสร็จสิ้นอีกครั้ง', true);
       });
   }
@@ -1230,6 +1243,7 @@ function submitTrip() {
         } else toast('เกิดข้อผิดพลาด: ' + res.error, true);
         return;
       }
+      S.tripRow = res.row || 0;
       uploadInBatches(res.folderId, res.tripId, res.time);
     }).catch(function () {
       btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
@@ -1252,9 +1266,14 @@ function uploadInBatches(folderId, tripId, serverTime) {
   function sendNext() {
     if (bi >= batches.length) {
       setProg(100, 'กำลังปิด Trip...');
-      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, photoCount: total }, { retries: 3, timeout: 30000 })
-        .then(function () {
+      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, row: S.tripRow || 0, photoCount: total }, { retries: 1, timeout: 20000 })
+        .then(function (res) {
           btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+          if (!res || !res.ok) {
+            setProg(100, 'อัพรูปครบแล้ว แต่ปิด Trip ไม่สำเร็จ — กดบันทึกอีกครั้ง');
+            toast('ปิด Trip ไม่สำเร็จ: ' + ((res && res.error) || 'error'), true);
+            return;
+          }
           showSuccess(serverTime, total);
         }).catch(function () {
           btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
