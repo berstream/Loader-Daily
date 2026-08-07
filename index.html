@@ -162,6 +162,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .cambtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 12px;font-size:15px;font-weight:600;line-height:1.2}
 .cambtn .ic{font-size:28px;line-height:1}
 .camhint{font-size:12.5px;color:var(--sub);margin-top:10px;text-align:center;line-height:1.5}
+.autostat{display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--panel2);font-size:12.5px;color:var(--sub)}
+.autostat .dot{width:8px;height:8px;border-radius:50%;background:var(--mut);flex-shrink:0;transition:background .2s}
+.autostat .dot.busy{background:var(--amber);animation:pulse 1s infinite}
+.autostat .dot.ok{background:var(--teal)}
+.autostat .dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin-top:14px}
 .thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--panel2);animation:pop .25s ease both}
 @keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
@@ -467,7 +473,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <span class="ic">🖼️</span><span>เลือกจากคลัง</span>
         </button>
       </div>
-      <p class="camhint">สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง</p>
+      <p class="camhint" id="camhint">สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง</p>
       <!-- capture=environment → Android/iOS เปิดกล้องหลังโดยตรง (ห้ามใส่ multiple ไม่งั้น Android ข้ามกล้อง) -->
       <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none">
       <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
@@ -480,10 +486,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="bar"><div class="fill" id="progFill"></div></div>
         <div class="lbl"><span id="progText">กำลังเตรียม...</span><b id="progPct">0%</b></div>
       </div>
+      <!-- สถานะอัพโหลดอัตโนมัติ (เฉพาะโหมด Demo) -->
+      <div class="autostat" id="autoStat" style="display:none">
+        <span class="dot" id="autoDot"></span>
+        <span id="autoStatText">พร้อมถ่ายรูป</span>
+      </div>
     </div>
 
     <div style="margin-top:18px">
+      <!-- ปุ่มปกติ (ระบบจริง) -->
       <button class="btn btn-amber" id="btnSubmit" onclick="submitTrip()">🚚 บันทึกและอัพโหลด</button>
+      <!-- ปุ่มโหมด Demo: เริ่มถ่าย → เสร็จสิ้น -->
+      <button class="btn btn-amber" id="btnStartAuto" style="display:none" onclick="startAutoTrip()">▶️ เริ่มถ่ายรูป (สร้าง Trip)</button>
+      <button class="btn btn-teal" id="btnFinishAuto" style="display:none;margin-top:10px" onclick="finishAutoTrip()">✅ เสร็จสิ้น — ปิด Trip</button>
+      <button class="btn btn-ghost btn-sm" id="btnCancelAuto" style="display:none;margin-top:10px" onclick="cancelAutoTrip()">ยกเลิก Trip นี้</button>
     </div>
   </div>
 
@@ -694,6 +710,9 @@ var S = {
   modalFolder: '', modalOffset: 0, modalTotal: 0
 };
 var DIRTAG = { out: 'OUTBOUND', 'in': 'INBOUND', picking: 'PICKING' };
+var AUTO = { on: false, tripId: '', folderId: '', serverTime: null, nextIdx: 0, sent: 0, queue: [], busy: false, failed: 0 };
+var AUTO_CHUNK = 3;
+
 // ข้อความต่างกันตามขา
 var DIRCFG = {
   out: { userRole: 'loader', userLabel: 'LOADER', formTitle: '📦 เข้าใช้งานแบบ Loader', nameLabel: 'ชื่อผู้โหลด',
@@ -803,6 +822,13 @@ function applyUploadForm() {
   document.getElementById('supplierGroup').style.display = S.dir === 'in' ? 'block' : 'none';
   document.getElementById('plateGroup').style.display = isPick ? 'none' : 'block';
   document.getElementById('truckGroup').style.display = isPick ? 'none' : 'block';
+  // โหมด Demo = อัพโหลดอัตโนมัติ (ถ่ายแล้วส่งเลย) / ระบบจริง = กดบันทึกทีเดียวเหมือนเดิม
+  var auto = !!S.demo;
+  document.getElementById('btnSubmit').style.display = auto ? 'none' : 'block';
+  if (!AUTO.on) autoUIMode(false);
+  document.getElementById('camhint').textContent = auto
+    ? 'สูงสุด 80 รูป — โหมด Demo: ถ่ายแล้วรูปทยอยอัพโหลดเองอัตโนมัติ ไม่ต้องรอตอนจบ'
+    : 'สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง';
 }
 function showAdminForm() {
   document.getElementById('roleSelect').style.display = 'none';
@@ -952,10 +978,12 @@ function handleFiles(fileList) {
   prog.classList.add('on');
   var done = 0;
   var chain = Promise.resolve();
+  var newOnes = [];
   files.forEach(function (f) {
     chain = chain.then(function () {
       return compressImage(f).then(function (out) {
         S.photos.push(out);
+        newOnes.push(out);
         addThumb(out);
         done++;
         setProg((done / files.length) * 100, 'กำลังย่อรูป ' + done + '/' + files.length);
@@ -966,6 +994,7 @@ function handleFiles(fileList) {
     setProg(100, 'ย่อรูปเสร็จแล้ว');
     setTimeout(function () { prog.classList.remove('on'); }, 900);
     updatePhotoMeta();
+    if (AUTO.on) autoEnqueue(newOnes);   // โหมด Demo: ทยอยส่งขึ้นเองเลย
   });
 }
 
@@ -1035,29 +1064,153 @@ function blobToBase64(blob) {
   });
 }
 
-function submitTrip() {
+/* ================= AUTO-UPLOAD (เฉพาะโหมด Demo) =================
+ * ไหลงาน: กรอกข้อมูล → เริ่มถ่ายรูป (สร้าง trip) → ถ่ายเรื่อยๆ ครบ 3 รูปส่งเบื้องหลัง → เสร็จสิ้น
+ * ปลอดภัยเพราะชื่อไฟล์ deterministic (TripID_ลำดับ) + server upsert = ส่งซ้ำไม่มีรูปซ้ำ */
+
+function autoStatus(text, cls) {
+  var wrap = document.getElementById('autoStat');
+  wrap.style.display = 'flex';
+  document.getElementById('autoStatText').textContent = text;
+  var dot = document.getElementById('autoDot');
+  dot.className = 'dot' + (cls ? ' ' + cls : '');
+}
+function autoUIMode(active) {
+  var demo = !!S.demo;
+  document.getElementById('btnStartAuto').style.display = (demo && !active) ? 'block' : 'none';
+  document.getElementById('btnFinishAuto').style.display = (demo && active) ? 'block' : 'none';
+  document.getElementById('btnCancelAuto').style.display = (demo && active) ? 'block' : 'none';
+  // ล็อกช่องข้อมูลระหว่างถ่าย กันแก้กลางคัน (trip สร้างไปแล้ว)
+  ['fPlate', 'fManifest', 'fStore', 'fSupplier'].forEach(function (id) {
+    var el = document.getElementById(id); if (el) el.disabled = active;
+  });
+  document.querySelectorAll('.truck').forEach(function (t) { t.style.pointerEvents = active ? 'none' : ''; t.style.opacity = active ? '.55' : ''; });
+}
+function startAutoTrip() {
+  var v = collectTripFields();
+  if (!v) return;
+  var btn = document.getElementById('btnStartAuto');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังสร้าง Trip...';
+  api({ action: 'createTrip', dir: S.dir, user: S.name, plate: v.plate, docno: v.docno,
+        partyCode: v.partyCode, partyName: v.partyName, truckSize: v.truckSize }, { retries: 2 })
+    .then(function (res) {
+      btn.disabled = false; btn.innerHTML = '▶️ เริ่มถ่ายรูป (สร้าง Trip)';
+      if (!res.ok) {
+        if (res.error === 'DOC_DUPLICATE') { document.getElementById('manErr').classList.add('on'); toast('เลขเอกสารซ้ำ', true); }
+        else toast('สร้าง Trip ไม่สำเร็จ: ' + res.error, true);
+        return;
+      }
+      AUTO = { on: true, tripId: res.tripId, folderId: res.folderId, serverTime: res.time,
+               nextIdx: 0, sent: 0, queue: [], busy: false, failed: 0 };
+      autoUIMode(true);
+      autoStatus('พร้อมถ่ายรูป — รูปจะทยอยอัพโหลดเองอัตโนมัติ', 'ok');
+      toast('สร้าง Trip แล้ว เริ่มถ่ายรูปได้เลย');
+    }).catch(function () {
+      btn.disabled = false; btn.innerHTML = '▶️ เริ่มถ่ายรูป (สร้าง Trip)';
+      toast('เชื่อมต่อ server ไม่ได้', true);
+    });
+}
+/* เรียกจาก handleFiles เมื่ออยู่ในโหมด auto — เข้าคิวแล้วส่งเมื่อครบ 3 */
+function autoEnqueue(photos) {
+  photos.forEach(function (p) { AUTO.queue.push(p); });
+  autoPump(false);
+}
+function autoPump(flush) {
+  if (!AUTO.on || AUTO.busy) return;
+  if (AUTO.queue.length < AUTO_CHUNK && !flush) {
+    autoStatus('รออีก ' + (AUTO_CHUNK - AUTO.queue.length) + ' รูปจะอัพโหลดชุดถัดไป · ส่งแล้ว ' + AUTO.sent + ' รูป', 'ok');
+    return;
+  }
+  if (!AUTO.queue.length) { autoFlushDone(); return; }
+  var batch = AUTO.queue.splice(0, AUTO_CHUNK);
+  var startIdx = AUTO.nextIdx;
+  AUTO.nextIdx += batch.length;
+  AUTO.busy = true;
+  autoStatus('กำลังอัพโหลด ' + batch.length + ' รูป... (ส่งแล้ว ' + AUTO.sent + ')', 'busy');
+  function pad3(n) { return ('00' + n).slice(-3); }
+  Promise.all(batch.map(function (p, k) {
+    return blobToBase64(p.blob).then(function (b64) {
+      return { name: AUTO.tripId + '_' + pad3(startIdx + k + 1) + '.jpg', data: b64 };
+    });
+  })).then(function (payload) {
+    return api({ action: 'uploadBatch', folderId: AUTO.folderId, photos: payload }, { retries: 3, timeout: 30000 });
+  }).then(function (res) {
+    if (!res.ok) throw new Error(res.error || 'fail');
+    AUTO.busy = false; AUTO.sent += batch.length; AUTO.failed = 0;
+    autoStatus('อัพโหลดแล้ว ' + AUTO.sent + ' รูป' + (AUTO.queue.length ? ' · เหลือในคิว ' + AUTO.queue.length : ''), 'ok');
+    autoPump(flush);
+  }).catch(function () {
+    AUTO.busy = false; AUTO.failed++;
+    AUTO.nextIdx = startIdx;                       // คืนเลขลำดับ
+    AUTO.queue = batch.concat(AUTO.queue);         // คืนรูปกลับคิว
+    autoStatus('อัพโหลดสะดุด — จะลองใหม่อัตโนมัติ (ครั้งที่ ' + AUTO.failed + ')', 'err');
+    if (AUTO.failed < 5) setTimeout(function () { autoPump(flush); }, 3000);
+    else autoStatus('อัพโหลดไม่สำเร็จหลายครั้ง — เช็คสัญญาณแล้วกดเสร็จสิ้นเพื่อลองใหม่', 'err');
+  });
+}
+function autoFlushDone() {
+  // เรียกเมื่อคิวว่างระหว่าง finish
+  if (AUTO.finishing) {
+    AUTO.finishing = false;
+    api({ action: 'finalizeTrip', dir: S.dir, tripId: AUTO.tripId, photoCount: AUTO.sent }, { retries: 3 })
+      .then(function () {
+        var st = AUTO.serverTime, total = AUTO.sent;
+        AUTO.on = false; autoUIMode(false);
+        document.getElementById('autoStat').style.display = 'none';
+        showSuccess(st, total);
+      }).catch(function () {
+        var btn = document.getElementById('btnFinishAuto');
+        btn.disabled = false; btn.textContent = '✅ เสร็จสิ้น — ปิด Trip';
+        toast('ปิด Trip ไม่สำเร็จ — กดเสร็จสิ้นอีกครั้ง', true);
+      });
+  }
+}
+function finishAutoTrip() {
+  if (!AUTO.on) return;
+  if (!AUTO.sent && !AUTO.queue.length) { toast('ยังไม่มีรูปเลย ถ่ายอย่างน้อย 1 รูปก่อน', true); return; }
+  var btn = document.getElementById('btnFinishAuto');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังปิด Trip...';
+  AUTO.finishing = true;
+  autoStatus('กำลังส่งรูปที่เหลือ ' + AUTO.queue.length + ' รูป...', 'busy');
+  if (!AUTO.busy) autoPump(true);
+}
+function cancelAutoTrip() {
+  if (!confirm('ยกเลิก Trip นี้?\nรูปที่อัพไปแล้วจะยังอยู่บน Drive แต่ Trip จะไม่ถูกปิด')) return;
+  AUTO.on = false; AUTO.finishing = false;
+  autoUIMode(false);
+  document.getElementById('autoStat').style.display = 'none';
+  clearPhotos();
+  toast('ยกเลิก Trip แล้ว');
+}
+/* รวม validate + อ่านค่าฟอร์ม (ใช้ร่วมกับ submitTrip) */
+function collectTripFields() {
   var plate = document.getElementById('fPlate').value.trim();
   var docno = document.getElementById('fManifest').value.trim();
   var isPick = (S.dir === 'picking');
   var partyCode = '', partyName = '';
   if (S.dir === 'out' || isPick) {
-    var storeSel = document.getElementById('fStore');
-    partyCode = storeSel.value;
-    partyName = partyCode ? storeSel.options[storeSel.selectedIndex].text : '';
+    var sel = document.getElementById('fStore');
+    partyCode = sel.value;
+    partyName = partyCode ? sel.options[sel.selectedIndex].text : '';
   } else {
     partyName = document.getElementById('fSupplier').value.trim();
   }
   document.getElementById('manErr').classList.remove('on');
-
   if (isPick) {
-    // QC เช็ค 100% — ต้องครบทุกช่องก่อนบันทึก
-    if (!docno) { toast('กรอก Outbound Label ก่อน', true); return; }
-    if (!partyCode) { toast('เลือก Store ก่อน', true); return; }
+    if (!docno) { toast('กรอก Outbound Label ก่อน', true); return null; }
+    if (!partyCode) { toast('เลือก Store ก่อน', true); return null; }
   } else {
-    if (!plate) { toast('กรอกเลขทะเบียนรถก่อน', true); return; }
-    if (!docno) { toast('กรอกเลขเอกสารก่อน', true); return; }
-    if (!S.truckSize) { toast('เลือกขนาดรถก่อน', true); return; }
+    if (!plate) { toast('กรอกเลขทะเบียนรถก่อน', true); return null; }
+    if (!docno) { toast('กรอกเลขเอกสารก่อน', true); return null; }
+    if (!S.truckSize) { toast('เลือกขนาดรถก่อน', true); return null; }
   }
+  return { plate: plate, docno: docno, partyCode: partyCode, partyName: partyName,
+           truckSize: isPick ? '' : (S.truckSize + ' ล้อ') };
+}
+
+function submitTrip() {
+  var v = collectTripFields();
+  if (!v) return;
   if (!S.photos.length) { toast('เลือกรูปอย่างน้อย 1 รูป', true); return; }
 
   var btn = document.getElementById('btnSubmit');
@@ -1065,26 +1218,24 @@ function submitTrip() {
   var prog = document.getElementById('prog');
   prog.classList.add('on'); setProg(0, 'กำลังสร้าง Trip...');
 
-  api({
-    action: 'createTrip', dir: S.dir,
-    user: S.name, plate: plate, docno: docno,
-    partyCode: partyCode, partyName: partyName, truckSize: isPick ? '' : (S.truckSize + ' ล้อ')
-  }).then(function (res) {
-    if (!res.ok) {
+  api({ action: 'createTrip', dir: S.dir, user: S.name, plate: v.plate, docno: v.docno,
+        partyCode: v.partyCode, partyName: v.partyName, truckSize: v.truckSize }, { retries: 2 })
+    .then(function (res) {
+      if (!res.ok) {
+        btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
+        prog.classList.remove('on');
+        if (res.error === 'DOC_DUPLICATE') {
+          document.getElementById('manErr').classList.add('on');
+          toast('เลขเอกสารซ้ำ', true);
+        } else toast('เกิดข้อผิดพลาด: ' + res.error, true);
+        return;
+      }
+      uploadInBatches(res.folderId, res.tripId, res.time);
+    }).catch(function () {
       btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
       prog.classList.remove('on');
-      if (res.error === 'DOC_DUPLICATE') {
-        document.getElementById('manErr').classList.add('on');
-        toast('เลขเอกสารซ้ำ', true);
-      } else toast('เกิดข้อผิดพลาด: ' + res.error, true);
-      return;
-    }
-    uploadInBatches(res.folderId, res.tripId, res.time);
-  }).catch(function () {
-    btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
-    prog.classList.remove('on');
-    toast('เชื่อมต่อ server ไม่ได้', true);
-  });
+      toast('เชื่อมต่อ server ไม่ได้', true);
+    });
 }
 
 function uploadInBatches(folderId, tripId, serverTime) {
@@ -1164,6 +1315,10 @@ function resetUpload() {
   document.querySelectorAll('.truck').forEach(function (t) { t.classList.remove('sel'); });
   S.truckSize = '';
   clearPhotos();
+  AUTO.on = false; AUTO.finishing = false; AUTO.queue = []; AUTO.sent = 0; AUTO.nextIdx = 0;
+  autoUIMode(false);
+  var as = document.getElementById('autoStat'); if (as) as.style.display = 'none';
+  var fb = document.getElementById('btnFinishAuto'); if (fb) { fb.disabled = false; fb.textContent = '✅ เสร็จสิ้น — ปิด Trip'; }
   document.getElementById('prog').classList.remove('on');
   show(S.role === 'admin' ? 'v-admin' : 'v-upload');
   if (S.role === 'admin') adminTab('up');
