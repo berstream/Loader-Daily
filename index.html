@@ -158,6 +158,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .drop .big{font-size:34px;line-height:1}
 .drop p{font-size:14px;color:var(--sub);margin-top:8px}
 .drop b{color:var(--txt)}
+.camrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cambtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 12px;font-size:15px;font-weight:600;line-height:1.2}
+.cambtn .ic{font-size:28px;line-height:1}
+.camhint{font-size:12.5px;color:var(--sub);margin-top:10px;text-align:center;line-height:1.5}
 .thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin-top:14px}
 .thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--panel2);animation:pop .25s ease both}
 @keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
@@ -455,10 +459,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <div class="card">
       <h2>รูปภาพการโหลด <span class="tag">PHOTOS</span></h2>
-      <div class="drop" id="dropzone" onclick="document.getElementById('fileInput').click()">
-        <div class="big">📸</div>
-        <p><b>แตะเพื่อถ่ายรูป / เลือกรูป</b><br>สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป</p>
+      <div class="camrow">
+        <button class="btn btn-amber cambtn" onclick="document.getElementById('camInput').click()">
+          <span class="ic">📷</span><span>ถ่ายรูป</span>
+        </button>
+        <button class="btn btn-ghost cambtn" onclick="document.getElementById('fileInput').click()">
+          <span class="ic">🖼️</span><span>เลือกจากคลัง</span>
+        </button>
       </div>
+      <p class="camhint">สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง</p>
+      <!-- capture=environment → Android/iOS เปิดกล้องหลังโดยตรง (ห้ามใส่ multiple ไม่งั้น Android ข้ามกล้อง) -->
+      <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none">
       <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
       <div class="photometa">
         <span>เลือกแล้ว <span class="cnt" id="photoCount">0</span> / 80 รูป</span>
@@ -924,14 +935,13 @@ document.getElementById('truckTiles').addEventListener('click', function (e) {
 });
 
 /* ================= PHOTOS: pick + compress ================= */
-document.getElementById('fileInput').addEventListener('change', function (e) {
-  handleFiles(e.target.files);
-  e.target.value = '';
+// ทั้งปุ่มถ่ายรูปและปุ่มคลังภาพใช้ handler เดียวกัน — เคลียร์ value ทุกครั้งเพื่อให้ถ่ายซ้ำติดๆ กันได้
+['camInput', 'fileInput'].forEach(function (id) {
+  document.getElementById(id).addEventListener('change', function (e) {
+    handleFiles(e.target.files);
+    e.target.value = '';
+  });
 });
-var dz = document.getElementById('dropzone');
-dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('hot'); });
-dz.addEventListener('dragleave', function () { dz.classList.remove('hot'); });
-dz.addEventListener('drop', function (e) { e.preventDefault(); dz.classList.remove('hot'); handleFiles(e.dataTransfer.files); });
 
 function handleFiles(fileList) {
   var files = Array.prototype.slice.call(fileList).filter(function (f) { return f.type.indexOf('image') === 0; });
