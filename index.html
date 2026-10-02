@@ -351,28 +351,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* ---------- Picking: โหมด 2 แบบ + Scan Label ---------- */
 .modeor{text-align:center;font-size:12.5px;color:var(--mut);margin:12px 0}
 .modeor:before,.modeor:after{content:'';display:inline-block;width:28px;height:1px;background:var(--line2);vertical-align:middle;margin:0 8px}
-.pickmode .dtab{font-size:14px}
-.ptypes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.ptypes .truck .n{font-size:18px}
 .scanbox{position:relative;margin-top:12px;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3}
 .scanbox video{width:100%;height:100%;object-fit:cover;display:block}
 .scanbox .frame{position:absolute;inset:16% 22%;border:3px solid rgba(255,178,36,.9);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35);transition:border-color .15s}
 .scanbox .frame.hit{border-color:var(--teal)}
 .scanbox .camtip{position:absolute;left:0;right:0;bottom:8px;text-align:center;color:#fff;font-size:12px;text-shadow:0 1px 3px #000}
 .inrow{display:flex;gap:8px}
-.inrow input{flex:1;min-width:0;font-family:'IBM Plex Mono',monospace;text-transform:uppercase}
+.inrow input{flex:1;min-width:0}
 .inrow .btn{flex-shrink:0}
-.sccount{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.sccount div{background:var(--panel2);border-radius:10px;padding:8px;text-align:center;font-size:11.5px;color:var(--sub)}
-.sccount b{display:block;font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--txt)}
-.scrow{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;margin-top:6px;background:var(--panel2);font-size:13px}
-.scrow .lb{font-family:'IBM Plex Mono',monospace;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.scrow .bd{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line2);color:var(--sub);flex-shrink:0}
-.scrow .st{flex-shrink:0;font-size:12px}
-.scrow.dup{border-color:var(--red);background:var(--red-bg)}
-.scrow.saved .st{color:var(--teal)}
-.scrow .x{background:none;border:0;color:var(--mut);font-size:15px;cursor:pointer;padding:0 4px}
-.scrow .sub{display:block;font-family:inherit;font-weight:400;font-size:11.5px;color:var(--sub)}
 .inapp{display:none;position:sticky;top:0;z-index:70;background:#E24B4A;color:#fff;font-size:13px;line-height:1.5;padding:10px 14px;text-align:center}
 .inapp.on{display:block}
 .inapp button{margin:6px 4px 0;background:#fff;color:#B0302F;border:0;border-radius:99px;padding:5px 14px;font-weight:600;font-family:inherit;font-size:12.5px;cursor:pointer}
@@ -486,11 +472,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="dtab" id="upDirIn" onclick="switchUploadDir('in')">📥 อัพโหลด Inbound</div>
       <div class="dtab" id="upDirPicking" onclick="switchUploadDir('picking')">✅ อัพโหลด Picking</div>
     </div>
-    <div class="dirtoggle pickmode" id="pickModeBar" style="display:none">
-      <div class="dtab on" id="pmQc" onclick="setPickMode('qc')">✅ บันทึกงาน QC</div>
-      <div class="dtab" id="pmScan" onclick="setPickMode('scan')">📱 สแกน Label</div>
-    </div>
-    <div id="qcPane">
     <div class="card">
       <h2 id="tripCardTitle">ข้อมูลเที่ยวขนส่ง <span class="tag" id="tripCardTag">TRIP</span></h2>
       <div class="fgroup" id="plateGroup">
@@ -507,7 +488,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="fgroup">
         <label class="f" id="docLabel">เลข Load Manifest</label>
-        <input type="text" id="fManifest" placeholder="เช่น LM-20260728-001" autocomplete="off">
+        <div class="inrow">
+          <input type="text" id="fManifest" placeholder="เช่น LM-20260728-001" autocomplete="off">
+          <button class="btn btn-amber btn-sm" id="btnScanLabel" style="display:none" onclick="toggleScanCam()">📷 สแกน</button>
+        </div>
+        <div id="scanCamWrap" style="display:none">
+          <div class="scanbox">
+            <video id="scanVideo" playsinline muted autoplay></video>
+            <div class="frame" id="scanFrame"></div>
+            <div class="camtip">เล็ง QR ของ Outbound Label ให้อยู่ในกรอบ</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="stopScanCam()">⏹ ปิดกล้อง</button>
+        </div>
         <div class="err" id="manErr">เลขนี้ถูกใช้ไปแล้ว</div>
       </div>
       <div class="fgroup" id="truckGroup" style="margin-bottom:0">
@@ -559,54 +551,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="btn btn-amber" id="btnSubmit" onclick="submitTrip()">🚚 บันทึกและอัพโหลด</button>
       <button class="btn btn-teal" id="btnFinishAuto" style="display:none;margin-top:10px" onclick="finishAutoTrip()">✅ เสร็จสิ้น — ปิด Trip</button>
       <button class="btn btn-ghost btn-sm" id="btnCancelAuto" style="display:none;margin-top:10px" onclick="cancelAutoTrip()">ยกเลิก Trip นี้</button>
-    </div>
-    </div><!-- /qcPane -->
-
-    <!-- ============ SCAN LABEL (Picking) ============ -->
-    <div id="scanPane" style="display:none">
-      <div class="card">
-        <h2>สแกน Label พาเลท <span class="tag">SCAN</span></h2>
-        <div class="fgroup">
-          <label class="f">Store ปลายทาง</label>
-          <select id="scStore" onchange="scanStoreChanged()"><option value="">— เลือก Store —</option></select>
-        </div>
-        <div class="fgroup">
-          <label class="f">ประเภทพาเลท</label>
-          <div class="ptypes" id="scTypes">
-            <div class="truck sel" data-v="Full"><div class="n">Full</div><div class="l">เต็มพาเลท</div></div>
-            <div class="truck" data-v="Half"><div class="n">Half</div><div class="l">ครึ่งพาเลท</div></div>
-          </div>
-        </div>
-        <button class="btn btn-amber" id="btnScanCam" onclick="startScanCam()">📷 เปิดกล้องสแกน QR</button>
-        <div id="scanCamWrap" style="display:none">
-          <div class="scanbox">
-            <video id="scanVideo" playsinline muted autoplay></video>
-            <div class="frame" id="scanFrame"></div>
-            <div class="camtip">เล็ง QR ให้อยู่ในกรอบ — สแกนได้ต่อเนื่อง</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="stopScanCam()">⏹ ปิดกล้อง</button>
-        </div>
-        <div class="fgroup" style="margin:16px 0 0">
-          <label class="f">หรือพิมพ์เลข Label เอง</label>
-          <div class="inrow">
-            <input type="text" id="scManual" placeholder="เช่น O8472609240050" autocomplete="off" autocapitalize="characters" enterkeyhint="done">
-            <button class="btn btn-ghost btn-sm" onclick="addManualScan()">＋ เพิ่ม</button>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>รายการที่สแกน <span class="tag" id="scTag">0</span></h2>
-        <div class="sccount">
-          <div><b id="scNAll">0</b>สแกนแล้ว</div>
-          <div><b id="scNSaved">0</b>บันทึกแล้ว</div>
-          <div><b id="scNPend">0</b>รอบันทึก</div>
-        </div>
-        <div class="autostat" id="scStat" style="display:none"><span class="dot" id="scDot"></span><span id="scStatText"></span></div>
-        <div id="scList"><div class="empty">ยังไม่มีรายการ — เลือก Store แล้วเริ่มสแกน</div></div>
-        <button class="btn btn-teal" id="btnScanSave" style="margin-top:14px" onclick="flushScans(true)">💾 บันทึกที่มีตอนนี้</button>
-        <button class="btn btn-ghost btn-sm" id="btnScanClear" style="width:100%;margin-top:8px;display:none" onclick="clearScanList()">ล้างรายการที่บันทึกแล้ว</button>
-        <p class="camhint">ระบบบันทึกอัตโนมัติทุก 10 รายการ · เลขซ้ำจะถูกเตือนและไม่บันทึกซ้ำ</p>
-      </div>
     </div>
   </div>
 
@@ -843,7 +787,6 @@ var S = {
   truckSize: '',
   stores: [],
   exportTrips: [], exportScans: [], exportScanMeta: null,
-  pickMode: 'qc',        // Picking: qc = บันทึกงาน QC (รูป) / scan = สแกน Label
   classic: null,         // {tripId, base} ของการกดบันทึกแบบเดิม (กดซ้ำหลังอัพสะดุด = ทับไฟล์เดิม)
   modalFolder: '', modalOffset: 0, modalTotal: 0
 };
@@ -947,26 +890,15 @@ var EN = {
   'รูปแบบ Outbound Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)': 'Outbound label format looks wrong (expected O + 13 digits)',
   'ยืนยันใช้เลขนี้?': 'Use this number anyway?',
   /* --- Scan Label --- */
-  '✅ บันทึกงาน QC': '✅ QC record', '📱 สแกน Label': '📱 Scan labels',
-  'สแกน Label พาเลท': 'Scan pallet labels', 'ประเภทพาเลท': 'Pallet type',
-  'เต็มพาเลท': 'Full pallet', 'ครึ่งพาเลท': 'Half pallet',
-  '📷 เปิดกล้องสแกน QR': '📷 Open camera to scan QR',
-  'เล็ง QR ให้อยู่ในกรอบ — สแกนได้ต่อเนื่อง': 'Aim the QR inside the frame — scans continuously',
-  '⏹ ปิดกล้อง': '⏹ Close camera',
-  'หรือพิมพ์เลข Label เอง': 'Or type the label number', '＋ เพิ่ม': '＋ Add',
-  'รายการที่สแกน': 'Scanned items', 'สแกนแล้ว': 'Scanned', 'บันทึกแล้ว': 'Saved', 'รอบันทึก': 'Pending',
-  'ยังไม่มีรายการ — เลือก Store แล้วเริ่มสแกน': 'No items yet — select a store and start scanning',
-  '💾 บันทึกที่มีตอนนี้': '💾 Save what I have now',
-  'ล้างรายการที่บันทึกแล้ว': 'Clear saved items',
-  'ระบบบันทึกอัตโนมัติทุก 10 รายการ · เลขซ้ำจะถูกเตือนและไม่บันทึกซ้ำ': 'Auto-saves every 10 items · duplicates are flagged and not saved twice',
-  '✅ มีในระบบแล้ว': '✅ already in system', 'ซ้ำ': 'Duplicate', 'เคยบันทึกที่ Store อื่นแล้ว': 'already saved under another store',
   'รูปแบบ Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)': 'Label format looks wrong (expected O + 13 digits)',
-  'ยืนยันเพิ่มเลขนี้?': 'Add this number anyway?',
+  '⏹ ปิดกล้อง': '⏹ Close camera',
   /* --- in-app browser --- */
   '⚠️ กำลังเปิดในแอป LINE / Facebook — กล้องและการอัพโหลดอาจใช้ไม่ได้': '⚠️ Opened inside LINE / Facebook — camera and uploads may not work',
   'กด ⋯ มุมขวาบน แล้วเลือก “เปิดในเบราว์เซอร์” (Safari / Chrome)': 'Tap ⋯ (top right) and choose “Open in browser” (Safari / Chrome)',
   'สลับธีมสว่าง/มืด': 'Toggle light/dark theme',
   'เปิดใน Chrome': 'Open in Chrome',
+  '📷 สแกน': '📷 Scan', '⏹ ปิด': '⏹ Close', 'เล็ง QR ของ Outbound Label ให้อยู่ในกรอบ': 'Aim the outbound label QR inside the frame',
+  'เฉลี่ย/วัน': 'Avg/day',
   '🖼️ เลือกหลายรูปพร้อมกัน: iPhone แตะเลือกหลายรูปแล้วกด “เพิ่ม” · Android กดค้างที่รูปแรก แล้วแตะรูปอื่นต่อ':
     '🖼️ Pick many at once: iPhone — tap several photos then “Add” · Android — long-press the first photo, then tap more',
   'ถ้าเลือกได้ทีละรูป ให้เลือกเมนู “ไฟล์” หรือ “Photos” แทน “แกลเลอรี” — หรือกดเลือกซ้ำได้ รูปจะสะสมต่อ':
@@ -1140,17 +1072,14 @@ function refreshDynamicText() {
     if (typeof applyUploadForm === 'function' && S.role) applyUploadForm();
     if (typeof applyDirTabUI === 'function' && S.role === 'admin') applyDirTabUI();
     updatePhotoMeta();
-    if (S.role) renderScanList();
   } catch (e) {}
 }
 
 var DIRTAG = { out: 'OUTBOUND', 'in': 'INBOUND', picking: 'PICKING' };
 var AUTO = { on: false, tripId: '', folderId: '', serverTime: null, nextIdx: 0, sent: 0, queue: [], busy: false, failed: 0 };
 var AUTO_CHUNK = 3;
-/* Scan Label (Picking) — ประกาศไว้ก่อน restore() เรียกใช้ตอนเปิดหน้า */
-var SC = { items: [], busy: false, again: false, retry: 0, stream: null, timer: null, detector: null,
-           last: '', lastAt: 0, type: 'Full', key: '', audio: null };
-var SCAN_AUTO_N = 10;   // ครบ 10 รายการ บันทึกขึ้น server อัตโนมัติ
+/* สแกน QR (Picking) — ประกาศไว้ก่อน restore() เรียกใช้ตอนเปิดหน้า */
+var SC = { stream: null, timer: null, detector: null, audio: null };   // กล้องสแกน QR ของ Outbound Label
 var JSQR_URLS = ['https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js',
                  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'];
 var jsqrLoading = null;
@@ -1169,7 +1098,7 @@ var DIRCFG = {
          cardTitle: 'ข้อมูลการรับของ', cardTag: 'รับเข้า', docLabel: 'เลข PO / Invoice / DO', docPh: 'เช่น PO-2026072800',
          dupMsg: 'เลขเอกสารนี้ถูกใช้ไปแล้ว' },
   picking: { userRole: 'picking', userLabel: 'PICKING (QC)', formTitle: '✅ เข้าใช้งานแบบ Picking', nameLabel: 'ชื่อผู้ตรวจ (QC)',
-         cardTitle: 'ข้อมูล Picking Complete', cardTag: 'PICKING', docLabel: 'Outbound Label', docPh: 'เช่น OB-20260806-001',
+         cardTitle: 'ข้อมูล Picking Complete', cardTag: 'PICKING', docLabel: 'Outbound Label', docPh: 'เช่น O8472609240050',
          dupMsg: 'Outbound Label นี้ถูกใช้ไปแล้ว' }
 };
 var THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -1284,9 +1213,9 @@ function applyUploadForm() {
     : autoAvail()
       ? 'สูงสุด 80 รูป — โหมด Demo: ถ่ายแล้วรูปทยอยอัพโหลดเองอัตโนมัติ ไม่ต้องรอตอนจบ'
       : 'สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง');
-  // แถบเลือกโหมดของ Picking: บันทึกงาน QC / สแกน Label
-  document.getElementById('pickModeBar').style.display = isPick ? 'flex' : 'none';
-  setPickMode(isPick ? (S.pickMode || 'qc') : 'qc', true);
+  // ปุ่มสแกน QR ข้างช่อง Outbound Label (เฉพาะ Picking)
+  document.getElementById('btnScanLabel').style.display = isPick ? '' : 'none';
+  if (!isPick) stopScanCam();
 }
 /* ปุ่มอัพอัตโนมัติ: Demo ทุกขา + Picking ระบบจริง */
 function autoAvail() { return !!S.demo || S.dir === 'picking'; }
@@ -1388,7 +1317,6 @@ function logout() {
     var view = lsGet(VIEW_KEY) || {};
     S.role = sess.role; S.name = sess.name; S.adminToken = sess.token || ''; S.dir = sess.dir || 'out';
     S.demo = !!sess.demo; if (S.demo) document.body.classList.add('demo-on');
-    try { S.pickMode = localStorage.getItem('wfdc_pmode') || 'qc'; } catch (e) {}
     if (sess.role === 'admin') {
       if (view.dir) S.dir = view.dir;
       document.getElementById('appShell').classList.add('wide');
@@ -1406,7 +1334,6 @@ function renderStores(stores) {
   S.stores = stores;
   var cur1 = document.getElementById('fStore').value;
   var cur2 = document.getElementById('expStore').value;
-  var cur3 = document.getElementById('scStore').value;
   var opts = '<option value="">' + t('— เลือก Store —') + '</option>';
   var eopts = '<option value="">' + t('ทุก Store') + '</option>';
   stores.forEach(function (st) {
@@ -1416,11 +1343,8 @@ function renderStores(stores) {
   });
   document.getElementById('fStore').innerHTML = opts;
   document.getElementById('expStore').innerHTML = eopts;
-  document.getElementById('scStore').innerHTML = opts;
   if (cur1) document.getElementById('fStore').value = cur1;
   else if (S.pendingStore) document.getElementById('fStore').value = S.pendingStore;     // ค่าจากแบบร่าง (ก่อนรีเฟรช)
-  if (cur3) document.getElementById('scStore').value = cur3;
-  else { try { var ps = localStorage.getItem('wfdc_scstore'); if (ps) document.getElementById('scStore').value = ps; } catch (e) {} }
   if (cur2) document.getElementById('expStore').value = cur2;
 }
 
@@ -1616,7 +1540,8 @@ function autoUIMode(active) {
   document.getElementById('btnSubmit').style.display = (classicAvail() && !active) ? 'block' : 'none';
   var orl = document.getElementById('modeOr'); if (orl) orl.style.display = (av && classicAvail() && !active) ? 'block' : 'none';
   // ล็อกช่องข้อมูลระหว่างถ่าย กันแก้กลางคัน (trip สร้างไปแล้ว)
-  ['fPlate', 'fManifest', 'fStore', 'fSupplier'].forEach(function (id) {
+  if (active) stopScanCam();
+  ['fPlate', 'fManifest', 'fStore', 'fSupplier', 'btnScanLabel'].forEach(function (id) {
     var el = document.getElementById(id); if (el) el.disabled = active;
   });
   document.querySelectorAll('.truck').forEach(function (t) { t.style.pointerEvents = active ? 'none' : ''; t.style.opacity = active ? '.55' : ''; });
@@ -1938,208 +1863,10 @@ function copyPageLink() {
   } else fallback();
 }
 
-/* ================= PICKING: โหมด บันทึกงาน QC / สแกน Label ================= */
-function setPickMode(m, silent) {
-  if (S.dir !== 'picking') m = 'qc';
-  S.pickMode = m;
-  try { localStorage.setItem('wfdc_pmode', m); } catch (e) {}
-  document.getElementById('pmQc').classList.toggle('on', m === 'qc');
-  document.getElementById('pmScan').classList.toggle('on', m === 'scan');
-  document.getElementById('qcPane').style.display = (m === 'qc') ? 'block' : 'none';
-  document.getElementById('scanPane').style.display = (m === 'scan') ? 'block' : 'none';
-  if (m === 'scan') {
-    scanRestore();
-    renderScanList();
-    if (!('BarcodeDetector' in window)) loadJsQR().catch(function () {});   // โหลดตัวอ่าน QR รอไว้ก่อน
-    if (!silent && IN_APP) toast('กล้องในแอป LINE/Facebook อาจใช้ไม่ได้ — เปิดใน Safari/Chrome', true);
-  } else {
-    stopScanCam();
-  }
-}
-
-/* ================= SCAN LABEL ================= */
-function scanKey() { return 'wfdc_scan_' + (S.demo ? 'demo_' : '') + 'pending'; }
-function pendingCount() { return SC.items.filter(function (x) { return x.st === 'pend'; }).length; }
-function persistScans() {
-  try {
-    var keep = SC.items.filter(function (x) { return x.st === 'pend' || x.st === 'sending'; })
-      .map(function (x) { return { label: x.label, palletType: x.palletType, storeCode: x.storeCode, storeName: x.storeName, scanner: x.scanner, at: x.at, st: 'pend' }; });
-    localStorage.setItem(scanKey(), JSON.stringify(keep));
-  } catch (e) {}
-}
-/* รายการที่ยังไม่ได้บันทึก (เช่น เน็ตหลุด/ปิดแอป) เก็บในเครื่องไว้ — เปิดโหมดสแกนอีกครั้งจะบันทึกต่อให้ */
-function scanRestore() {
-  var key = scanKey();
-  if (SC.key === key) return;
-  SC.key = key;
-  var list = [];
-  try { list = JSON.parse(localStorage.getItem(key) || '[]') || []; } catch (e) {}
-  var have = {};
-  SC.items.forEach(function (x) { have[x.label.toUpperCase()] = 1; });
-  var added = 0;
-  list.forEach(function (x) {
-    if (!x || !x.label || have[x.label.toUpperCase()]) return;
-    x.st = 'pend'; SC.items.push(x); added++;
-  });
-  if (added) {
-    toast('มีรายการค้างบันทึก ' + added + ' รายการ — กำลังบันทึกให้');
-    setTimeout(function () { flushScans(false); }, 400);
-  }
-}
-document.getElementById('scTypes').addEventListener('click', function (e) {
-  var tile = e.target.closest('.truck');
-  if (!tile) return;
-  document.querySelectorAll('#scTypes .truck').forEach(function (x) { x.classList.remove('sel'); });
-  tile.classList.add('sel');
-  SC.type = tile.dataset.v;
-});
-function scanStoreChanged() {
-  try { localStorage.setItem('wfdc_scstore', document.getElementById('scStore').value); } catch (e) {}
-  if (pendingCount()) flushScans(false);   // ชุดเดิมของ Store ก่อนหน้า บันทึกให้เลย
-}
-document.getElementById('scManual').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') { e.preventDefault(); addManualScan(); }
-});
-function addManualScan() {
-  var el = document.getElementById('scManual');
-  if (!el.value.trim()) { toast('พิมพ์เลข Label ก่อน', true); return; }
-  if (addScan(el.value, 'manual')) el.value = '';
-  el.focus();
-}
-function addScan(raw, src) {
-  var label = normLabel(raw);
-  if (!label) return false;
-  var sel = document.getElementById('scStore');
-  if (!sel.value) { toast('เลือก Store ก่อน', true); buzz(true); return false; }
-  var key = label.toUpperCase();
-  var ex = SC.items.filter(function (x) { return x.label.toUpperCase() === key; })[0];
-  if (ex) {
-    toast(ex.st === 'dup' ? 'เลขนี้เคยบันทึกแล้ว: ' + label : 'เลขนี้สแกนไปแล้ว: ' + label, true);
-    buzz(true);
-    return false;
-  }
-  if (!labelOk(label) &&
-      !confirm(tr('รูปแบบ Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)') + '\n' + label + '\n\n' + tr('ยืนยันเพิ่มเลขนี้?'))) return false;
-  SC.items.unshift({ label: label, palletType: SC.type, storeCode: sel.value, storeName: sel.options[sel.selectedIndex].text,
-                     scanner: S.name, at: Date.now(), st: 'pend' });
-  buzz(false);
-  if (src === 'cam') toast('✓ ' + label);
-  persistScans();
-  renderScanList();
-  if (pendingCount() >= SCAN_AUTO_N) flushScans(false);
-  return true;
-}
-function removeScan(i) {
-  var x = SC.items[i];
-  if (!x || x.st !== 'pend') return;
-  SC.items.splice(i, 1);
-  persistScans(); renderScanList();
-}
-function clearScanList() {
-  SC.items = SC.items.filter(function (x) { return x.st === 'pend' || x.st === 'sending'; });
-  renderScanList();
-}
-function scanStat(text, cls) {
-  document.getElementById('scStat').style.display = 'flex';
-  document.getElementById('scStatText').textContent = tr(text);
-  document.getElementById('scDot').className = 'dot' + (cls ? ' ' + cls : '');
-}
-function fmtClock(ms) {
-  var d = new Date(ms), p = function (x) { return (x < 10 ? '0' : '') + x; };
-  return p(d.getHours()) + ':' + p(d.getMinutes());
-}
-function renderScanList() {
-  var all = SC.items.length, saved = 0, pend = 0;
-  SC.items.forEach(function (x) { if (x.st === 'saved') saved++; else if (x.st === 'pend' || x.st === 'sending') pend++; });
-  document.getElementById('scNAll').textContent = all;
-  document.getElementById('scNSaved').textContent = saved;
-  document.getElementById('scNPend').textContent = pend;
-  document.getElementById('scTag').textContent = all;
-  document.getElementById('btnScanClear').style.display = (all - pend) > 0 ? 'block' : 'none';
-  var wrap = document.getElementById('scList');
-  if (!all) { wrap.innerHTML = '<div class="empty">' + t('ยังไม่มีรายการ — เลือก Store แล้วเริ่มสแกน') + '</div>'; return; }
-  var html = '';
-  SC.items.slice(0, 150).forEach(function (x, i) {
-    var st = x.st === 'saved' ? (x.already ? t('✅ มีในระบบแล้ว') : '✅')
-           : x.st === 'dup' ? '⚠️ ' + t('ซ้ำ') + (x.dupStore ? ' (' + x.dupStore + ')' : '')
-           : x.st === 'sending' ? '⏳' : '🕓';
-    html += '<div class="scrow ' + x.st + '">' +
-      '<span class="lb">' + esc(x.label) + (labelOk(x.label) ? '' : ' ⚠️') +
-        '<span class="sub">' + esc(x.storeCode) + ' · ' + fmtClock(x.at) + (x.st === 'dup' ? ' · ' + t('เคยบันทึกที่ Store อื่นแล้ว') : '') + '</span></span>' +
-      '<span class="bd">' + x.palletType + '</span>' +
-      '<span class="st">' + st + '</span>' +
-      (x.st === 'pend' ? '<button class="x" onclick="removeScan(' + i + ')">✕</button>' : '') +
-    '</div>';
-  });
-  wrap.innerHTML = html;
-}
+/* ================= สแกน QR → กรอก Outbound Label ================= */
 function esc(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
 }
-/* บันทึกขึ้น server — แยกส่งตาม Store+ผู้สแกน ก้อนละไม่เกิน 50 · ส่งซ้ำได้ปลอดภัย (server กันซ้ำ) */
-function flushScans(manual) {
-  var pend = SC.items.filter(function (x) { return x.st === 'pend'; });
-  if (!pend.length) {
-    if (manual) toast(SC.items.length ? 'บันทึกครบแล้ว ไม่มีรายการค้าง' : 'ยังไม่มีรายการ', !SC.items.length);
-    return;
-  }
-  if (SC.busy) { SC.again = true; return; }
-  SC.busy = true;
-  var groups = {}, order = [];
-  pend.forEach(function (x) {
-    var g = x.storeCode + '|' + (x.scanner || S.name);
-    if (!groups[g]) { groups[g] = []; order.push(g); }
-    groups[g].push(x);
-  });
-  var chunks = [];
-  order.forEach(function (g) { for (var i = 0; i < groups[g].length; i += 50) chunks.push(groups[g].slice(i, i + 50)); });
-  pend.forEach(function (x) { x.st = 'sending'; });
-  renderScanList();
-  scanStat('กำลังบันทึก ' + pend.length + ' รายการ...', 'busy');
-  var btn = document.getElementById('btnScanSave');
-  btn.disabled = true;
-  var saved = 0, dups = 0, failed = false;
-  var chain = Promise.resolve();
-  chunks.forEach(function (c) {
-    chain = chain.then(function () {
-      return api({ action: 'savePalletScans', scanner: c[0].scanner || S.name, storeCode: c[0].storeCode, storeName: c[0].storeName,
-                   items: c.map(function (x) { return { label: x.label, palletType: x.palletType }; }) }, { retries: 2, timeout: 30000 })
-        .then(function (res) {
-          if (!res || !res.ok) throw new Error((res && res.error) || 'fail');
-          var ok = {}, al = {}, dupMap = {};
-          (res.savedLabels || []).forEach(function (l) { ok[String(l).toUpperCase()] = 1; });
-          (res.already || []).forEach(function (l) { al[String(l).toUpperCase()] = 1; });
-          (res.duplicates || []).forEach(function (d) { dupMap[String(d.label).toUpperCase()] = d.store || ''; });
-          c.forEach(function (x) {
-            var k = x.label.toUpperCase();
-            if (k in dupMap) { x.st = 'dup'; x.dupStore = dupMap[k]; dups++; }
-            else if (ok[k] || al[k]) { x.st = 'saved'; x.already = !ok[k]; saved++; }
-            else x.st = 'pend';
-          });
-        }).catch(function () {
-          failed = true;
-          c.forEach(function (x) { if (x.st === 'sending') x.st = 'pend'; });
-        });
-    });
-  });
-  return chain.then(function () {
-    SC.busy = false; btn.disabled = false;
-    persistScans(); renderScanList();
-    if (failed) {
-      SC.retry++;
-      scanStat('บันทึกไม่สำเร็จ — เช็คสัญญาณ ระบบจะลองใหม่อัตโนมัติ', 'err');
-      toast('บันทึกไม่สำเร็จ — รายการยังอยู่ในเครื่อง ระบบจะลองใหม่', true);
-      if (SC.retry <= 5) setTimeout(function () { flushScans(false); }, 5000 * SC.retry);
-    } else {
-      SC.retry = 0;
-      scanStat('บันทึกแล้ว ' + saved + ' รายการ' + (dups ? ' · ซ้ำ ' + dups + ' รายการ (ไม่บันทึก)' : ''), dups ? 'err' : 'ok');
-      if (dups) { toast('พบเลขซ้ำ ' + dups + ' รายการ — เคยบันทึกที่ Store อื่นแล้ว ไม่บันทึกซ้ำ', true); buzz(true); }
-      else if (manual) toast('บันทึกแล้ว ' + saved + ' รายการ');
-    }
-    if (SC.again) { SC.again = false; if (pendingCount() >= SCAN_AUTO_N || manual) flushScans(manual); }
-  });
-}
-
 /* ---- เสียง/สั่น ตอนสแกน ---- */
 function initBeep() {
   try { if (!SC.audio) SC.audio = new (window.AudioContext || window.webkitAudioContext)(); if (SC.audio.state === 'suspended') SC.audio.resume(); } catch (e) {}
@@ -2203,15 +1930,16 @@ function getDetector() {
   }
   return jsqrDetector();
 }
+function toggleScanCam() { if (SC.stream) stopScanCam(); else startScanCam(); }
 function startScanCam() {
-  if (!document.getElementById('scStore').value) { toast('เลือก Store ก่อน', true); return; }
   if (SC.stream) return;
+  if (!('BarcodeDetector' in window)) loadJsQR().catch(function () {});
   initBeep();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     toast(IN_APP ? 'แอปนี้เปิดกล้องไม่ได้ — เปิดลิงก์ใน Safari/Chrome' : 'เบราว์เซอร์นี้เปิดกล้องไม่ได้ — พิมพ์เลข Label แทน', true);
     return;
   }
-  var btn = document.getElementById('btnScanCam');
+  var btn = document.getElementById('btnScanLabel');
   btn.disabled = true;
   navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
     .then(function (stream) {
@@ -2221,7 +1949,7 @@ function startScanCam() {
       v.srcObject = stream;
       var p = v.play(); if (p && p.catch) p.catch(function () {});
       document.getElementById('scanCamWrap').style.display = 'block';
-      btn.style.display = 'none'; btn.disabled = false;
+      btn.disabled = false; btn.textContent = t('⏹ ปิด');
       return getDetector().then(function (det) { SC.detector = det; scanLoop(); }, function () {
         stopScanCam();
         toast('โหลดตัวอ่าน QR ไม่สำเร็จ — เช็คเน็ต หรือพิมพ์เลข Label แทน', true);
@@ -2243,25 +1971,30 @@ function scanLoop() {
     .then(function () { if (SC.stream) SC.timer = setTimeout(scanLoop, 180); });
 }
 function onScanCode(code) {
-  var label = normLabel(code), now = Date.now();
-  // QR เดิมยังค้างอยู่หน้ากล้อง → ไม่นับซ้ำ (ต้องเอาออกจากกล้องก่อน ~3 วิ)
-  if (label === SC.last && now - SC.lastAt < 3000) { SC.lastAt = now; return; }
-  SC.last = label;
+  var label = normLabel(code);
+  if (!label) return;
+  var el = document.getElementById('fManifest');
+  el.value = label;
+  document.getElementById('manErr').classList.remove('on');
+  draftSave();
   var fr = document.getElementById('scanFrame');
-  fr.classList.add('hit'); setTimeout(function () { fr.classList.remove('hit'); }, 350);
-  addScan(code, 'cam');
-  SC.lastAt = Date.now();
+  fr.classList.add('hit');
+  buzz(!labelOk(label));
+  stopScanCam();   // ได้เลขแล้วปิดกล้องเอง
+  if (labelOk(label)) toast('✓ ' + label);
+  else toast('รูปแบบ Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)', true);
 }
 function stopScanCam() {
   clearTimeout(SC.timer); SC.timer = null;
   if (SC.stream) { SC.stream.getTracks().forEach(function (tk) { try { tk.stop(); } catch (e) {} }); SC.stream = null; }
   var v = document.getElementById('scanVideo'); if (v) v.srcObject = null;
   var w = document.getElementById('scanCamWrap'); if (w) w.style.display = 'none';
-  var b = document.getElementById('btnScanCam'); if (b) { b.style.display = 'block'; b.disabled = false; }
+  var fr = document.getElementById('scanFrame'); if (fr) setTimeout(function () { fr.classList.remove('hit'); }, 300);
+  var b = document.getElementById('btnScanLabel'); if (b) { b.disabled = false; b.textContent = t('📷 สแกน'); }
 }
 document.addEventListener('visibilitychange', function () { if (document.hidden) stopScanCam(); });
 window.addEventListener('beforeunload', function (e) {
-  if (pendingCount() || (AUTO.on && (AUTO.queue.length || AUTO.busy))) { e.preventDefault(); e.returnValue = ''; }
+  if (AUTO.on && (AUTO.queue.length || AUTO.busy)) { e.preventDefault(); e.returnValue = ''; }
 });
 
 /* ================= ADMIN: TABS ================= */
@@ -2278,7 +2011,7 @@ function adminTab(which) {
     // Admin สลับขาอัพโหลดได้
     document.getElementById('upDirToggle').style.display = 'flex';
     if (S.dir === 'all') S.dir = 'out';
-    if (S.dir === 'scan') { S.dir = 'picking'; S.pickMode = 'scan'; }   // มาจากแท็บ Scan → เปิดหน้าสแกนให้เลย
+    if (S.dir === 'scan') S.dir = 'picking';
     document.getElementById('upDirOut').classList.toggle('on', S.dir === 'out');
     document.getElementById('upDirIn').classList.toggle('on', S.dir === 'in');
     document.getElementById('upDirPicking').classList.toggle('on', S.dir === 'picking');
@@ -2337,7 +2070,7 @@ function applyDirTabUI() {
   document.getElementById('dsTag').textContent = isAll ? 'ALL' : isScan ? 'SCAN' : (DIRTAG[S.dir] || 'OUTBOUND');
   setPh(document.getElementById('dsText'), isScan ? 'เลข Label / Store / ชื่อผู้สแกน'
     : S.dir === 'picking' ? 'Outbound Label / Store / ชื่อผู้ตรวจ' : 'ทะเบียน / เลขเอกสาร / Store / ชื่อผู้บันทึก');
-  document.getElementById('stPhotosLbl').textContent = isScan ? 'Full' : t('รูปทั้งหมด');
+  document.getElementById('stPhotosLbl').textContent = t(isScan ? 'Store' : 'รูปทั้งหมด');
   document.getElementById('dirOut').classList.toggle('on', S.dir === 'out');
   document.getElementById('dirIn').classList.toggle('on', S.dir === 'in');
   document.getElementById('dirPicking').classList.toggle('on', S.dir === 'picking');
@@ -2345,7 +2078,7 @@ function applyDirTabUI() {
   document.getElementById('demoTools').style.display = S.demo ? 'block' : 'none';
   document.getElementById('deptView').style.display = (isAll || isScan) ? 'none' : 'block';
   document.getElementById('stTripsLbl').textContent = t(isAll ? 'Trip รวมทุกแผนก' : isScan ? 'พาเลททั้งหมด' : 'Trip ทั้งหมด');
-  document.getElementById('stTrucksLbl').textContent = isScan ? 'Half' : t((S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า');
+  document.getElementById('stTrucksLbl').textContent = t(isScan ? 'เฉลี่ย/วัน' : (S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า');
   if (!isAll && !isScan) {
     document.getElementById('planTag').textContent = DIRTAG[S.dir] || 'OUTBOUND';
     document.getElementById('topTitle').firstChild.nodeValue =
@@ -2897,8 +2630,7 @@ function dashSearch() {
     api({ action: 'searchScans', token: S.adminToken, from: from, to: to, search: q, limit: 300 }, { retries: 2 })
       .then(function (res) {
         if (!res.ok) { if (res.error === 'UNAUTHORIZED') { toast('Session หมดอายุ — เข้าสู่ระบบใหม่', true); logout(); } fail(); return; }
-        sum.innerHTML = fmtFound(res.total, res.rows.length, LANG === 'en' ? 'pallets' : 'พาเลท', q) +
-          ' · Full ' + res.full + ' · Half ' + res.half;
+        sum.innerHTML = fmtFound(res.total, res.rows.length, LANG === 'en' ? 'pallets' : 'พาเลท', q);
         renderScanTable(res.rows, wrap);
       }).catch(fail);
     return;
@@ -2925,11 +2657,11 @@ function dashSearch() {
 function renderScanTable(rows, wrap) {
   if (!rows.length) { wrap.innerHTML = '<div class="empty">' + t('ไม่มีข้อมูลในช่วงที่เลือก') + '</div>'; return; }
   var h = '<div class="tblwrap"><table class="scantable"><thead><tr>' +
-    '<th>' + t('วันที่') + '</th><th>' + t('เวลา') + '</th><th>Label</th><th>' + t('ประเภท') + '</th><th>Store</th><th>' + t('ผู้สแกน') + '</th>' +
+    '<th>' + t('วันที่') + '</th><th>' + t('เวลา') + '</th><th>Label</th><th>Store</th><th>' + t('ผู้สแกน') + '</th>' +
     '</tr></thead><tbody>';
   rows.forEach(function (r) {
     h += '<tr><td>' + esc(r.businessDate) + '</td><td>' + esc(trTime(r.displayTime)) + '</td><td class="mono">' + esc(r.label) +
-      '</td><td>' + esc(r.palletType) + '</td><td>' + esc(r.storeName || r.storeCode) + '</td><td>' + esc(r.scanner) + '</td></tr>';
+      '</td><td>' + esc(r.storeName || r.storeCode) + '</td><td>' + esc(r.scanner) + '</td></tr>';
   });
   wrap.innerHTML = h + '</tbody></table></div>';
 }
@@ -2942,8 +2674,9 @@ function loadScanSummary(from, to, force) {
         return;
       }
       document.getElementById('stTrips').textContent = res.total.toLocaleString();
-      document.getElementById('stPhotos').textContent = res.full.toLocaleString();
-      document.getElementById('stTrucks').textContent = res.half.toLocaleString();
+      var nStore = (res.topStore || []).length, nDays = Object.keys(res.perDay || {}).length;
+      document.getElementById('stPhotos').textContent = nStore >= 10 ? '10+' : nStore;
+      document.getElementById('stTrucks').textContent = nDays ? Math.round(res.total / nDays) : 0;
       renderBars2(res.perDay || {}, {}, to, 'scanBars');
       renderTopStores(res.topStore || [], 'scanTop');
     }).catch(function () {
@@ -2966,8 +2699,8 @@ function queryScanExport(from, to, store, search) {
         return;
       }
       sum.innerHTML = (LANG === 'en'
-        ? 'Found <b>' + res.total.toLocaleString() + '</b> pallets · Full <b>' + res.full + '</b> · Half <b>' + res.half + '</b>'
-        : 'พบ <b>' + res.total.toLocaleString() + '</b> พาเลท · Full <b>' + res.full + '</b> · Half <b>' + res.half + '</b>') +
+        ? 'Found <b>' + res.total.toLocaleString() + '</b> pallets'
+        : 'พบ <b>' + res.total.toLocaleString() + '</b> พาเลท') +
         (res.total > res.rows.length ? (LANG === 'en' ? ' (first ' + res.rows.length + ' exported)' : ' (ส่งออกได้ ' + res.rows.length + ' รายการแรก)') : '') +
         (search ? (LANG === 'en' ? ' (search: ' : ' (ค้นหา: ') + esc(search) + ')' : '');
       var show = S.exportScans.slice(0, 200);
@@ -2990,7 +2723,7 @@ function downloadBlob(blob, name) {
   setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
 }
 function scanHeaders() {
-  return [t('วันที่'), t('เวลา'), t('เลข Label'), t('ประเภท'), t('รหัส Store'), t('ชื่อ Store'), t('ผู้สแกน'), t('เวลาระบบ')];
+  return [t('วันที่'), t('เวลา'), t('เลข Label'), t('รหัส Store'), t('ชื่อ Store'), t('ผู้สแกน'), t('เวลาระบบ')];
 }
 function downloadScanCSV() {
   var rows = S.exportScans || [];
@@ -2999,7 +2732,7 @@ function downloadScanCSV() {
   var lines = [scanHeaders().map(cell).join(',')];
   rows.forEach(function (r) {
     var lbl = /^\d+$/.test(r.label) ? '="' + r.label + '"' : r.label;   // กัน Excel ตัดเลข 0 นำหน้า
-    lines.push([r.businessDate, trTime(r.displayTime), lbl, r.palletType, r.storeCode, r.storeName, r.scanner, r.ts].map(cell).join(','));
+    lines.push([r.businessDate, trTime(r.displayTime), lbl, r.storeCode, r.storeName, r.scanner, r.ts].map(cell).join(','));
   });
   // BOM → Excel เปิดภาษาไทยได้ถูกต้อง
   downloadBlob(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'WFDC_PalletScan_' + scanFileTag() + '.csv');
@@ -3042,8 +2775,7 @@ function downloadScanPDF() {
     c.fillStyle = '#FFB224'; c.font = '600 40px ' + FONT;
     c.fillText('WFDC PALLET SCAN' + (S.demo ? ' (DEMO)' : ''), MX, 62);
     c.fillStyle = '#E8ECF4'; c.font = '400 22px ' + FONT;
-    c.fillText(rangeTxt + '    ' + (LANG === 'en' ? 'Total ' : 'รวม ') + rows.length + (LANG === 'en' ? ' pallets' : ' พาเลท') +
-      ' · Full ' + m.full + ' · Half ' + m.half, MX, 104);
+    c.fillText(rangeTxt + '    ' + (LANG === 'en' ? 'Total ' : 'รวม ') + rows.length + (LANG === 'en' ? ' pallets' : ' พาเลท'), MX, 104);
     y = 170;
   }
   function tableHead(cols) {
@@ -3076,23 +2808,23 @@ function downloadScanPDF() {
     var per = {}, order = [];
     rows.forEach(function (r) {
       var k = r.storeName || r.storeCode || '-';
-      if (!per[k]) { per[k] = { full: 0, half: 0 }; order.push(k); }
-      if (r.palletType === 'Half') per[k].half++; else per[k].full++;
+      if (!per[k]) { per[k] = 0; order.push(k); }
+      per[k]++;
     });
-    order.sort(function (a, b) { return (per[b].full + per[b].half) - (per[a].full + per[a].half); });
-    var sCols = [{ h: 'Store', x: MX + 8, w: 640 }, { h: 'Full', x: 760, w: 120, r: 1 }, { h: 'Half', x: 900, w: 120, r: 1 }, { h: t('รวม'), x: 1040, w: 130, r: 1 }];
+    order.sort(function (a, b) { return per[b] - per[a]; });
+    var sCols = [{ h: 'Store', x: MX + 8, w: 900 }, { h: t('รวม'), x: 1000, w: 170, r: 1 }];
     title(t('สรุปตาม Store'));
     tableHead(sCols);
     order.forEach(function (k) {
       if (y > PH - FOOT - RH) { newPage(); tableHead(sCols); }
-      row(sCols, [k, per[k].full, per[k].half, per[k].full + per[k].half]);
+      row(sCols, [k, per[k]]);
     });
-    row(sCols, [t('รวม'), m.full, m.half, rows.length], true);
+    row(sCols, [t('รวม'), rows.length], true);
     y += 30;
     // 2) รายการทั้งหมด
     var dCols = [{ h: '#', x: MX + 8, w: 60 }, { h: t('วันที่'), x: 140, w: 140 }, { h: t('เวลา'), x: 285, w: 170 },
-                 { h: t('เลข Label'), x: 460, w: 250, mono: 1 }, { h: t('ประเภท'), x: 715, w: 80 },
-                 { h: 'Store', x: 800, w: 230 }, { h: t('ผู้สแกน'), x: 1035, w: 140 }];
+                 { h: t('เลข Label'), x: 460, w: 270, mono: 1 },
+                 { h: 'Store', x: 735, w: 295 }, { h: t('ผู้สแกน'), x: 1035, w: 140 }];
     if (y > PH - FOOT - RH * 4) newPage();
     title(t('รายการพาเลท'));
     tableHead(dCols);
@@ -3102,7 +2834,7 @@ function downloadScanPDF() {
       for (; i < end; i++) {
         if (y > PH - FOOT - RH) { newPage(); tableHead(dCols); }
         var r = rows[i];
-        row(dCols, [i + 1, r.businessDate, trTime(r.displayTime), r.label, r.palletType, r.storeName || r.storeCode, r.scanner]);
+        row(dCols, [i + 1, r.businessDate, trTime(r.displayTime), r.label, r.storeName || r.storeCode, r.scanner]);
       }
       setExpProg(5 + (i / rows.length) * 90, 'PDF ' + i + '/' + rows.length);
       if (i < rows.length) return new Promise(function (res) { setTimeout(res, 0); }).then(chunk);
