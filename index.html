@@ -161,6 +161,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .camrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cambtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 12px;font-size:15px;font-weight:600;line-height:1.2}
 .cambtn .ic{font-size:28px;line-height:1}
+.camhint.galhint{margin-top:8px;font-size:11.5px;color:var(--mut)}
 .camhint{font-size:12.5px;color:var(--sub);margin-top:10px;text-align:center;line-height:1.5}
 .autostat{display:flex;align-items:center;gap:8px;margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--panel2);font-size:12.5px;color:var(--sub)}
 .autostat .dot{width:8px;height:8px;border-radius:50%;background:var(--mut);flex-shrink:0;transition:background .2s}
@@ -346,9 +347,53 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.25);border-top-color:currentColor;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media(max-width:420px){.clock .time{font-size:26px}.stats{gap:8px}.stat .val{font-size:24px}}
+
+/* ---------- Picking: โหมด 2 แบบ + Scan Label ---------- */
+.modeor{text-align:center;font-size:12.5px;color:var(--mut);margin:12px 0}
+.modeor:before,.modeor:after{content:'';display:inline-block;width:28px;height:1px;background:var(--line2);vertical-align:middle;margin:0 8px}
+.pickmode .dtab{font-size:14px}
+.ptypes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ptypes .truck .n{font-size:18px}
+.scanbox{position:relative;margin-top:12px;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+.scanbox .frame{position:absolute;inset:16% 22%;border:3px solid rgba(255,178,36,.9);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35);transition:border-color .15s}
+.scanbox .frame.hit{border-color:var(--teal)}
+.scanbox .camtip{position:absolute;left:0;right:0;bottom:8px;text-align:center;color:#fff;font-size:12px;text-shadow:0 1px 3px #000}
+.inrow{display:flex;gap:8px}
+.inrow input{flex:1;min-width:0;font-family:'IBM Plex Mono',monospace;text-transform:uppercase}
+.inrow .btn{flex-shrink:0}
+.sccount{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.sccount div{background:var(--panel2);border-radius:10px;padding:8px;text-align:center;font-size:11.5px;color:var(--sub)}
+.sccount b{display:block;font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--txt)}
+.scrow{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;margin-top:6px;background:var(--panel2);font-size:13px}
+.scrow .lb{font-family:'IBM Plex Mono',monospace;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scrow .bd{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line2);color:var(--sub);flex-shrink:0}
+.scrow .st{flex-shrink:0;font-size:12px}
+.scrow.dup{border-color:var(--red);background:var(--red-bg)}
+.scrow.saved .st{color:var(--teal)}
+.scrow .x{background:none;border:0;color:var(--mut);font-size:15px;cursor:pointer;padding:0 4px}
+.scrow .sub{display:block;font-family:inherit;font-weight:400;font-size:11.5px;color:var(--sub)}
+.inapp{display:none;position:sticky;top:0;z-index:70;background:#E24B4A;color:#fff;font-size:13px;line-height:1.5;padding:10px 14px;text-align:center}
+.inapp.on{display:block}
+.inapp button{margin:6px 4px 0;background:#fff;color:#B0302F;border:0;border-radius:99px;padding:5px 14px;font-weight:600;font-family:inherit;font-size:12.5px;cursor:pointer}
+.dsrow{display:flex;gap:8px;flex-wrap:wrap}
+.dsrow input{flex:1;min-width:180px}
+.dsum{font-size:13px;color:var(--sub);margin-top:10px}
+.dsum b{color:var(--txt)}
+.scantable{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
+.scantable th,.scantable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+.scantable th{color:var(--sub);font-weight:500;font-size:12px}
+.scantable td.mono{font-family:'IBM Plex Mono',monospace;font-weight:600}
+.tblwrap{max-height:420px;overflow:auto;margin-top:6px}
+.trip .dept{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--amber-glow);color:var(--amber)}
 </style>
 </head>
 <body>
+<div class="inapp" id="inappBar">
+  <div id="inappMsg">⚠️ กำลังเปิดในแอป LINE / Facebook — กล้องและการอัพโหลดอาจใช้ไม่ได้<br>กด ⋯ มุมขวาบน แล้วเลือก “เปิดในเบราว์เซอร์” (Safari / Chrome)</div>
+  <button id="btnOpenChrome" style="display:none" onclick="openInChrome()">เปิดใน Chrome</button>
+  <button onclick="copyPageLink()">📋 คัดลอกลิงก์</button>
+</div>
 <div class="hazard"></div>
 <div class="app" id="appShell">
 
@@ -441,6 +486,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="dtab" id="upDirIn" onclick="switchUploadDir('in')">📥 อัพโหลด Inbound</div>
       <div class="dtab" id="upDirPicking" onclick="switchUploadDir('picking')">✅ อัพโหลด Picking</div>
     </div>
+    <div class="dirtoggle pickmode" id="pickModeBar" style="display:none">
+      <div class="dtab on" id="pmQc" onclick="setPickMode('qc')">✅ บันทึกงาน QC</div>
+      <div class="dtab" id="pmScan" onclick="setPickMode('scan')">📱 สแกน Label</div>
+    </div>
+    <div id="qcPane">
     <div class="card">
       <h2 id="tripCardTitle">ข้อมูลเที่ยวขนส่ง <span class="tag" id="tripCardTag">TRIP</span></h2>
       <div class="fgroup" id="plateGroup">
@@ -480,6 +530,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <span class="ic">🖼️</span><span>เลือกจากคลัง</span>
         </button>
       </div>
+      <p class="camhint galhint">🖼️ เลือกหลายรูปพร้อมกัน: iPhone แตะเลือกหลายรูปแล้วกด “เพิ่ม” · Android กดค้างที่รูปแรก แล้วแตะรูปอื่นต่อ<br>ถ้าเลือกได้ทีละรูป ให้เลือกเมนู “ไฟล์” หรือ “Photos” แทน “แกลเลอรี” — หรือกดเลือกซ้ำได้ รูปจะสะสมต่อ</p>
       <p class="camhint" id="camhint">สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง</p>
       <!-- capture=environment → Android/iOS เปิดกล้องหลังโดยตรง (ห้ามใส่ multiple ไม่งั้น Android ข้ามกล้อง) -->
       <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none">
@@ -501,12 +552,61 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
 
     <div style="margin-top:18px">
-      <!-- ปุ่มปกติ (ระบบจริง) -->
+      <!-- อัพอัตโนมัติ: เริ่มถ่าย → เสร็จสิ้น (Demo ทุกขา + Picking) -->
+      <button class="btn btn-amber" id="btnStartAuto" style="display:none" onclick="startAutoTrip()">▶️ เริ่มถ่าย (อัพอัตโนมัติ)</button>
+      <div class="modeor" id="modeOr" style="display:none">หรือ ถ่ายครบแล้วค่อยกดบันทึกทีเดียว</div>
+      <!-- แบบเดิม: ถ่ายครบแล้วกดบันทึกทีเดียว -->
       <button class="btn btn-amber" id="btnSubmit" onclick="submitTrip()">🚚 บันทึกและอัพโหลด</button>
-      <!-- ปุ่มโหมด Demo: เริ่มถ่าย → เสร็จสิ้น -->
-      <button class="btn btn-amber" id="btnStartAuto" style="display:none" onclick="startAutoTrip()">▶️ เริ่มถ่ายรูป (สร้าง Trip)</button>
       <button class="btn btn-teal" id="btnFinishAuto" style="display:none;margin-top:10px" onclick="finishAutoTrip()">✅ เสร็จสิ้น — ปิด Trip</button>
       <button class="btn btn-ghost btn-sm" id="btnCancelAuto" style="display:none;margin-top:10px" onclick="cancelAutoTrip()">ยกเลิก Trip นี้</button>
+    </div>
+    </div><!-- /qcPane -->
+
+    <!-- ============ SCAN LABEL (Picking) ============ -->
+    <div id="scanPane" style="display:none">
+      <div class="card">
+        <h2>สแกน Label พาเลท <span class="tag">SCAN</span></h2>
+        <div class="fgroup">
+          <label class="f">Store ปลายทาง</label>
+          <select id="scStore" onchange="scanStoreChanged()"><option value="">— เลือก Store —</option></select>
+        </div>
+        <div class="fgroup">
+          <label class="f">ประเภทพาเลท</label>
+          <div class="ptypes" id="scTypes">
+            <div class="truck sel" data-v="Full"><div class="n">Full</div><div class="l">เต็มพาเลท</div></div>
+            <div class="truck" data-v="Half"><div class="n">Half</div><div class="l">ครึ่งพาเลท</div></div>
+          </div>
+        </div>
+        <button class="btn btn-amber" id="btnScanCam" onclick="startScanCam()">📷 เปิดกล้องสแกน QR</button>
+        <div id="scanCamWrap" style="display:none">
+          <div class="scanbox">
+            <video id="scanVideo" playsinline muted autoplay></video>
+            <div class="frame" id="scanFrame"></div>
+            <div class="camtip">เล็ง QR ให้อยู่ในกรอบ — สแกนได้ต่อเนื่อง</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="stopScanCam()">⏹ ปิดกล้อง</button>
+        </div>
+        <div class="fgroup" style="margin:16px 0 0">
+          <label class="f">หรือพิมพ์เลข Label เอง</label>
+          <div class="inrow">
+            <input type="text" id="scManual" placeholder="เช่น O8472609240050" autocomplete="off" autocapitalize="characters" enterkeyhint="done">
+            <button class="btn btn-ghost btn-sm" onclick="addManualScan()">＋ เพิ่ม</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>รายการที่สแกน <span class="tag" id="scTag">0</span></h2>
+        <div class="sccount">
+          <div><b id="scNAll">0</b>สแกนแล้ว</div>
+          <div><b id="scNSaved">0</b>บันทึกแล้ว</div>
+          <div><b id="scNPend">0</b>รอบันทึก</div>
+        </div>
+        <div class="autostat" id="scStat" style="display:none"><span class="dot" id="scDot"></span><span id="scStatText"></span></div>
+        <div id="scList"><div class="empty">ยังไม่มีรายการ — เลือก Store แล้วเริ่มสแกน</div></div>
+        <button class="btn btn-teal" id="btnScanSave" style="margin-top:14px" onclick="flushScans(true)">💾 บันทึกที่มีตอนนี้</button>
+        <button class="btn btn-ghost btn-sm" id="btnScanClear" style="width:100%;margin-top:8px;display:none" onclick="clearScanList()">ล้างรายการที่บันทึกแล้ว</button>
+        <p class="camhint">ระบบบันทึกอัตโนมัติทุก 10 รายการ · เลขซ้ำจะถูกเตือนและไม่บันทึกซ้ำ</p>
+      </div>
     </div>
   </div>
 
@@ -536,6 +636,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="dtab on" id="dirOut" onclick="switchDir('out')">📤 Outbound</div>
         <div class="dtab" id="dirIn" onclick="switchDir('in')">📥 Inbound</div>
         <div class="dtab" id="dirPicking" onclick="switchDir('picking')">✅ Picking</div>
+        <div class="dtab" id="dirScan" onclick="switchDir('scan')">📱 Scan</div>
       </div>
       <div class="filters">
         <div><label class="f">จากวันที่</label><input type="date" id="dashFrom"></div>
@@ -544,7 +645,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <div class="stats">
         <div class="stat"><div class="lbl" id="stTripsLbl">Trip ทั้งหมด</div><div class="val am" id="stTrips">—</div></div>
-        <div class="stat"><div class="lbl">รูปทั้งหมด</div><div class="val" id="stPhotos">—</div></div>
+        <div class="stat"><div class="lbl" id="stPhotosLbl">รูปทั้งหมด</div><div class="val" id="stPhotos">—</div></div>
         <div class="stat"><div class="lbl" id="stTrucksLbl">รถที่เข้า</div><div class="val" id="stTrucks">—</div></div>
       </div>
 
@@ -626,8 +727,30 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <h2 id="topTitle">สาขาที่มี Trip มากที่สุด <span class="tag">TOP 10</span></h2>
         <div id="topStores"><div class="empty">ยังไม่มีข้อมูล</div></div>
       </div>
-      <p class="listhead">Trip ล่าสุด</p>
-      <div class="triplist" id="tripList"></div>
+      </div>
+
+      <!-- โหมด Scan: พาเลทที่สแกน -->
+      <div id="scanView" style="display:none">
+        <div class="card chartcard">
+          <h2>พาเลทที่สแกนต่อวัน</h2>
+          <div class="bars2" id="scanBars"><div class="empty">เลือกช่วงวันที่แล้วกดโหลดข้อมูล</div></div>
+        </div>
+        <div class="card">
+          <h2>Store ที่สแกนมากที่สุด <span class="tag">TOP 10</span></h2>
+          <div id="scanTop"><div class="empty">ยังไม่มีข้อมูล</div></div>
+        </div>
+      </div>
+
+      <!-- ค้นหารายการ (ทุกแท็บ) — กดค้นหาเองเท่านั้น ไม่โหลดอัตโนมัติ -->
+      <div class="card" id="dashSearchCard">
+        <h2>ค้นหารายการ <span class="tag" id="dsTag">OUTBOUND</span></h2>
+        <div class="dsrow">
+          <input type="text" id="dsText" placeholder="ทะเบียน / เลขเอกสาร / Store / ชื่อผู้บันทึก" autocomplete="off">
+          <button class="btn btn-ghost btn-sm" onclick="dashSearch()">🔍 ค้นหา</button>
+        </div>
+        <div class="hint">ใช้ช่วงวันที่ด้านบน · ถ้าพิมพ์คำค้น ระบบจะค้นจากทุกวันที่</div>
+        <div class="dsum" id="dsSummary"></div>
+        <div class="triplist" id="tripList"></div>
       </div>
       <div id="demoTools" style="display:none;margin-top:18px">
         <div class="card" style="border-color:rgba(155,110,255,.4)">
@@ -646,6 +769,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="dtab on" id="expDirOut" onclick="switchExpDir('out')">📤 Outbound</div>
           <div class="dtab" id="expDirIn" onclick="switchExpDir('in')">📥 Inbound</div>
           <div class="dtab" id="expDirPicking" onclick="switchExpDir('picking')">✅ Picking</div>
+          <div class="dtab" id="expDirScan" onclick="switchExpDir('scan')">📱 Scan</div>
         </div>
         <div class="tabs" style="margin:0 0 16px">
           <div class="tab on" id="expSingle" onclick="expMode('single')">วันเดียว</div>
@@ -666,6 +790,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <span id="selCount"></span>
         </div>
         <div id="expList"></div>
+        <div class="dl-row" id="dlRowScan" style="display:none">
+          <button class="btn btn-teal" id="btnScanCsv" onclick="downloadScanCSV()">📊 ดาวน์โหลด Excel (CSV)</button>
+          <button class="btn btn-amber" id="btnScanPdf" onclick="downloadScanPDF()">📄 ดาวน์โหลด PDF</button>
+        </div>
         <div class="dl-row" id="dlRow" style="display:none">
           <button class="btn btn-amber" id="btnPdf" onclick="downloadPDF()">📄 ดาวน์โหลด PDF</button>
           <button class="btn btn-teal" id="btnZip" onclick="downloadZIP()">🖼️ ดาวน์โหลด ZIP</button>
@@ -714,7 +842,9 @@ var S = {
   photos: [],
   truckSize: '',
   stores: [],
-  exportTrips: [],
+  exportTrips: [], exportScans: [], exportScanMeta: null,
+  pickMode: 'qc',        // Picking: qc = บันทึกงาน QC (รูป) / scan = สแกน Label
+  classic: null,         // {tripId, base} ของการกดบันทึกแบบเดิม (กดซ้ำหลังอัพสะดุด = ทับไฟล์เดิม)
   modalFolder: '', modalOffset: 0, modalTotal: 0
 };
 /* ================= i18N: ไทย / English =================
@@ -807,7 +937,56 @@ var EN = {
   '📄 ดาวน์โหลด PDF': '📄 Download PDF', '🖼️ ดาวน์โหลด ZIP': '🖼️ Download ZIP',
   'โหลดรูปเพิ่ม': 'Load more photos', 'กำลังโหลด...': 'Loading...',
   'กำลังโหลดรายการ...': 'Loading list...', 'โหลดรายการไม่สำเร็จ': 'Failed to load list',
-  'โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่': 'Failed to load — try again'
+  'โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่': 'Failed to load — try again',
+  /* --- Picking: 2 โหมดอัพโหลด --- */
+  '▶️ เริ่มถ่าย (อัพอัตโนมัติ)': '▶️ Start shooting (auto-upload)',
+  'หรือ ถ่ายครบแล้วค่อยกดบันทึกทีเดียว': 'or shoot everything, then save once',
+  'สูงสุด 80 รูป — เลือกได้ 2 แบบ: ▶️ เริ่มถ่าย (อัพอัตโนมัติ) หรือถ่ายครบแล้วกด 🚚 บันทึกและอัพโหลด':
+    'Up to 80 photos — 2 ways: ▶️ Start shooting (auto-upload), or shoot everything then press 🚚 Save & upload',
+  'เช่น O8472609240050': 'e.g. O8472609240050',
+  'รูปแบบ Outbound Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)': 'Outbound label format looks wrong (expected O + 13 digits)',
+  'ยืนยันใช้เลขนี้?': 'Use this number anyway?',
+  /* --- Scan Label --- */
+  '✅ บันทึกงาน QC': '✅ QC record', '📱 สแกน Label': '📱 Scan labels',
+  'สแกน Label พาเลท': 'Scan pallet labels', 'ประเภทพาเลท': 'Pallet type',
+  'เต็มพาเลท': 'Full pallet', 'ครึ่งพาเลท': 'Half pallet',
+  '📷 เปิดกล้องสแกน QR': '📷 Open camera to scan QR',
+  'เล็ง QR ให้อยู่ในกรอบ — สแกนได้ต่อเนื่อง': 'Aim the QR inside the frame — scans continuously',
+  '⏹ ปิดกล้อง': '⏹ Close camera',
+  'หรือพิมพ์เลข Label เอง': 'Or type the label number', '＋ เพิ่ม': '＋ Add',
+  'รายการที่สแกน': 'Scanned items', 'สแกนแล้ว': 'Scanned', 'บันทึกแล้ว': 'Saved', 'รอบันทึก': 'Pending',
+  'ยังไม่มีรายการ — เลือก Store แล้วเริ่มสแกน': 'No items yet — select a store and start scanning',
+  '💾 บันทึกที่มีตอนนี้': '💾 Save what I have now',
+  'ล้างรายการที่บันทึกแล้ว': 'Clear saved items',
+  'ระบบบันทึกอัตโนมัติทุก 10 รายการ · เลขซ้ำจะถูกเตือนและไม่บันทึกซ้ำ': 'Auto-saves every 10 items · duplicates are flagged and not saved twice',
+  '✅ มีในระบบแล้ว': '✅ already in system', 'ซ้ำ': 'Duplicate', 'เคยบันทึกที่ Store อื่นแล้ว': 'already saved under another store',
+  'รูปแบบ Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)': 'Label format looks wrong (expected O + 13 digits)',
+  'ยืนยันเพิ่มเลขนี้?': 'Add this number anyway?',
+  /* --- in-app browser --- */
+  '⚠️ กำลังเปิดในแอป LINE / Facebook — กล้องและการอัพโหลดอาจใช้ไม่ได้': '⚠️ Opened inside LINE / Facebook — camera and uploads may not work',
+  'กด ⋯ มุมขวาบน แล้วเลือก “เปิดในเบราว์เซอร์” (Safari / Chrome)': 'Tap ⋯ (top right) and choose “Open in browser” (Safari / Chrome)',
+  'สลับธีมสว่าง/มืด': 'Toggle light/dark theme',
+  'เปิดใน Chrome': 'Open in Chrome',
+  '🖼️ เลือกหลายรูปพร้อมกัน: iPhone แตะเลือกหลายรูปแล้วกด “เพิ่ม” · Android กดค้างที่รูปแรก แล้วแตะรูปอื่นต่อ':
+    '🖼️ Pick many at once: iPhone — tap several photos then “Add” · Android — long-press the first photo, then tap more',
+  'ถ้าเลือกได้ทีละรูป ให้เลือกเมนู “ไฟล์” หรือ “Photos” แทน “แกลเลอรี” — หรือกดเลือกซ้ำได้ รูปจะสะสมต่อ':
+    'If only one can be picked, choose “Files” or “Photos” instead of “Gallery” — or pick again, photos keep adding up', '📋 คัดลอกลิงก์': '📋 Copy link',
+  /* --- dashboard: Scan + ค้นหา --- */
+  'พาเลทที่สแกนต่อวัน': 'Pallets scanned per day', 'Store ที่สแกนมากที่สุด': 'Top stores by pallets',
+  'พาเลททั้งหมด': 'Total pallets', 'ค้นหารายการ': 'Search records', '🔍 ค้นหา': '🔍 Search',
+  'ทะเบียน / เลขเอกสาร / Store / ชื่อผู้บันทึก': 'Plate / doc no. / store / recorded by',
+  'Outbound Label / Store / ชื่อผู้ตรวจ': 'Outbound label / store / inspector',
+  'เลข Label / Store / ชื่อผู้สแกน': 'Label no. / store / scanned by',
+  'ใช้ช่วงวันที่ด้านบน · ถ้าพิมพ์คำค้น ระบบจะค้นจากทุกวันที่': 'Uses the date range above · with a search term, all dates are searched',
+  'กดค้นหาเพื่อแสดงรายการ': 'Press Search to show records', 'กำลังค้นหา...': 'Searching...',
+  '🌙 กะดึก': '🌙 Night shift',
+  'วันที่': 'Date', 'เวลา': 'Time', 'ประเภท': 'Type', 'ผู้สแกน': 'Scanned by',
+  'เลข Label': 'Label no.', 'รหัส Store': 'Store code', 'ชื่อ Store': 'Store name', 'เวลาระบบ': 'Server time',
+  'รวม': 'Total', 'สรุปตาม Store': 'Summary by store', 'รายการพาเลท': 'Pallet list', 'ค้นหา': 'Search',
+  /* --- export: Scan --- */
+  'ค้นหาเลข Label / ผู้สแกน (ไม่บังคับ)': 'Search label no. / scanned by (optional)',
+  '📊 ดาวน์โหลด Excel (CSV)': '📊 Download Excel (CSV)',
+  'เกิดข้อผิดพลาด': 'An error occurred', 'กำลังสร้าง PDF...': 'Creating PDF...'
 };
 
 /* tr(): แปลข้อความ runtime — รองรับข้อความที่มีตัวเลขปน โดยจับคู่ pattern */
@@ -862,7 +1041,34 @@ var EN_PAT = [
   [/^อัพโหลดไม่สำเร็จ — กดบันทึกอีกครั้ง \(รูปที่อัพแล้วไม่ต้องอัพซ้ำ\)$/, 'Upload failed — press save again (uploaded photos are kept)'],
   [/^อัพโหลดไม่สำเร็จหลายครั้ง — เช็คสัญญาณแล้วกดเสร็จสิ้นเพื่อลองใหม่$/, 'Upload failed repeatedly — check signal then press Finish to retry'],
   [/^ปิด Trip ไม่สำเร็จ \((.+)\) — รูปอัพครบแล้ว กดเสร็จสิ้นอีกครั้งได้$/, 'Failed to close trip ($1) — photos are uploaded, press Finish again'],
-  [/^ปิด Trip ไม่สำเร็จ — รูปอัพครบแล้ว กดเสร็จสิ้นอีกครั้งได้$/, 'Failed to close trip — photos are uploaded, press Finish again']
+  [/^ปิด Trip ไม่สำเร็จ — รูปอัพครบแล้ว กดเสร็จสิ้นอีกครั้งได้$/, 'Failed to close trip — photos are uploaded, press Finish again'],
+  [/^ทำงานต่อจาก Trip เดิม \(มีรูปแล้ว (\d+) รูป\)$/, 'Continuing the existing trip ($1 photos already uploaded)'],
+  [/^คัดลอกลิงก์แล้ว — เปิด Safari\/Chrome แล้ววางลิงก์$/, 'Link copied — open Safari/Chrome and paste it'],
+  [/^กล้องในแอป LINE\/Facebook อาจใช้ไม่ได้ — เปิดใน Safari\/Chrome$/, 'Camera may not work inside LINE/Facebook — open in Safari/Chrome'],
+  [/^มีรายการค้างบันทึก (\d+) รายการ — กำลังบันทึกให้$/, '$1 unsaved item(s) found — saving now'],
+  [/^พิมพ์เลข Label ก่อน$/, 'Type a label number first'],
+  [/^เลขนี้สแกนไปแล้ว: (.+)$/, 'Already scanned: $1'],
+  [/^เลขนี้เคยบันทึกแล้ว: (.+)$/, 'Already saved before: $1'],
+  [/^บันทึกครบแล้ว ไม่มีรายการค้าง$/, 'All saved — nothing pending'],
+  [/^ยังไม่มีรายการ$/, 'No items yet'],
+  [/^ยังไม่มีข้อมูล$/, 'No data yet'],
+  [/^กำลังบันทึก (\d+) รายการ\.\.\.$/, 'Saving $1 item(s)...'],
+  [/^บันทึกไม่สำเร็จ — เช็คสัญญาณ ระบบจะลองใหม่อัตโนมัติ$/, 'Save failed — check signal, retrying automatically'],
+  [/^บันทึกไม่สำเร็จ — รายการยังอยู่ในเครื่อง ระบบจะลองใหม่$/, 'Save failed — items are kept on this device and will retry'],
+  [/^บันทึกแล้ว (\d+) รายการ$/, 'Saved $1 item(s)'],
+  [/^บันทึกแล้ว (\d+) รายการ · ซ้ำ (\d+) รายการ \(ไม่บันทึก\)$/, 'Saved $1 item(s) · $2 duplicate(s) (not saved)'],
+  [/^พบเลขซ้ำ (\d+) รายการ — เคยบันทึกที่ Store อื่นแล้ว ไม่บันทึกซ้ำ$/, '$1 duplicate(s) — already saved under another store, not saved again'],
+  [/^แอปนี้เปิดกล้องไม่ได้ — เปิดลิงก์ใน Safari\/Chrome$/, 'Camera unavailable in this app — open the link in Safari/Chrome'],
+  [/^เบราว์เซอร์นี้เปิดกล้องไม่ได้ — พิมพ์เลข Label แทน$/, 'This browser cannot open the camera — type the label instead'],
+  [/^โหลดตัวอ่าน QR ไม่สำเร็จ — เช็คเน็ต หรือพิมพ์เลข Label แทน$/, 'QR reader failed to load — check internet or type the label'],
+  [/^ไม่ได้รับอนุญาตใช้กล้อง — อนุญาตกล้องในการตั้งค่าเบราว์เซอร์ แล้วลองใหม่$/, 'Camera permission denied — allow camera in browser settings and retry'],
+  [/^เปิดกล้องไม่ได้ — พิมพ์เลข Label แทนได้$/, 'Cannot open camera — you can type the label instead'],
+  [/^ดาวน์โหลด Excel \(CSV\) เรียบร้อย$/, 'Excel (CSV) downloaded'],
+  [/^PDF trip (\d+)\/(\d+) · ดึงรูป (\d+)\/(\d+)$/, 'PDF trip $1/$2 · fetching photos $3/$4'],
+  [/^จัดหน้า trip (\d+)\/(\d+) เสร็จ$/, 'Laid out trip $1/$2'],
+  [/^สร้าง ZIP บน server · trip (\d+)\/(\d+) \((.+)\)$/, 'Building ZIP on server · trip $1/$2 ($3)'],
+  [/^เสร็จ (\d+)\/(\d+) trip$/, 'Done $1/$2 trip(s)'],
+  [/^ล้มเหลว (\d+)\/(\d+) trip · error: (.+)$/, 'Failed $1/$2 trip(s) · error: $3']
 ];
 
 /* เวลาจาก server เก็บเป็นไทยเสมอ — แปลงตอนแสดงผลเท่านั้น
@@ -934,12 +1140,25 @@ function refreshDynamicText() {
     if (typeof applyUploadForm === 'function' && S.role) applyUploadForm();
     if (typeof applyDirTabUI === 'function' && S.role === 'admin') applyDirTabUI();
     updatePhotoMeta();
+    if (S.role) renderScanList();
   } catch (e) {}
 }
 
 var DIRTAG = { out: 'OUTBOUND', 'in': 'INBOUND', picking: 'PICKING' };
 var AUTO = { on: false, tripId: '', folderId: '', serverTime: null, nextIdx: 0, sent: 0, queue: [], busy: false, failed: 0 };
 var AUTO_CHUNK = 3;
+/* Scan Label (Picking) — ประกาศไว้ก่อน restore() เรียกใช้ตอนเปิดหน้า */
+var SC = { items: [], busy: false, again: false, retry: 0, stream: null, timer: null, detector: null,
+           last: '', lastAt: 0, type: 'Full', key: '', audio: null };
+var SCAN_AUTO_N = 10;   // ครบ 10 รายการ บันทึกขึ้น server อัตโนมัติ
+var JSQR_URLS = ['https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js',
+                 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'];
+var jsqrLoading = null;
+var IN_APP = (function (ua) {
+  if (/\bLine\//i.test(ua)) return 'line';
+  if (/FBAN|FBAV|FB_IAB|FBIOS|Instagram|MicroMessenger/i.test(ua)) return 'fb';
+  return '';
+})(navigator.userAgent || '');
 
 // ข้อความต่างกันตามขา
 var DIRCFG = {
@@ -1058,14 +1277,21 @@ function applyUploadForm() {
   document.getElementById('supplierGroup').style.display = S.dir === 'in' ? 'block' : 'none';
   document.getElementById('plateGroup').style.display = isPick ? 'none' : 'block';
   document.getElementById('truckGroup').style.display = isPick ? 'none' : 'block';
-  // โหมด Demo = อัพโหลดอัตโนมัติ (ถ่ายแล้วส่งเลย) / ระบบจริง = กดบันทึกทีเดียวเหมือนเดิม
-  var auto = !!S.demo;
-  document.getElementById('btnSubmit').style.display = auto ? 'none' : 'block';
-  if (!AUTO.on) autoUIMode(false);
-  document.getElementById('camhint').textContent = t(auto
-    ? 'สูงสุด 80 รูป — โหมด Demo: ถ่ายแล้วรูปทยอยอัพโหลดเองอัตโนมัติ ไม่ต้องรอตอนจบ'
-    : 'สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง');
+  // Picking = มี 2 แบบ (อัพอัตโนมัติ / กดบันทึกทีเดียว) · Demo ขาอื่น = อัตโนมัติ · ระบบจริง Loader/Receiver = แบบเดิม
+  autoUIMode(AUTO.on);
+  document.getElementById('camhint').textContent = t(isPick
+    ? 'สูงสุด 80 รูป — เลือกได้ 2 แบบ: ▶️ เริ่มถ่าย (อัพอัตโนมัติ) หรือถ่ายครบแล้วกด 🚚 บันทึกและอัพโหลด'
+    : autoAvail()
+      ? 'สูงสุด 80 รูป — โหมด Demo: ถ่ายแล้วรูปทยอยอัพโหลดเองอัตโนมัติ ไม่ต้องรอตอนจบ'
+      : 'สูงสุด 80 รูป · คมชัดสูง 2560px · ~500-800KB/รูป — กดถ่ายรูปซ้ำได้เรื่อยๆ รูปจะสะสมต่อเนื่อง');
+  // แถบเลือกโหมดของ Picking: บันทึกงาน QC / สแกน Label
+  document.getElementById('pickModeBar').style.display = isPick ? 'flex' : 'none';
+  setPickMode(isPick ? (S.pickMode || 'qc') : 'qc', true);
 }
+/* ปุ่มอัพอัตโนมัติ: Demo ทุกขา + Picking ระบบจริง */
+function autoAvail() { return !!S.demo || S.dir === 'picking'; }
+/* ปุ่มบันทึกแบบเดิม: ระบบจริงทุกขา + Picking ใน Demo */
+function classicAvail() { return !S.demo || S.dir === 'picking'; }
 function showAdminForm() {
   document.getElementById('roleSelect').style.display = 'none';
   document.getElementById('adminForm').style.display = 'block';
@@ -1085,7 +1311,7 @@ function loginDemo() {
     document.getElementById('demoErr').classList.remove('on');
     S.role = 'admin'; S.name = 'Demo User'; S.adminToken = res.token; S.dir = 'out'; S.demo = true;
     document.body.classList.add('demo-on');
-    sessionStorage.setItem('wfdc_sess', JSON.stringify({ role: 'admin', name: S.name, token: res.token, demo: true }));
+    sessSave({ role: 'admin', name: S.name, token: res.token, demo: true });
     document.getElementById('appShell').classList.add('wide');
     enterApp(); show('v-admin'); initDashDates(); applyDirTabUI(); loadDashboard();
   }).catch(function () { btn.disabled = false; btn.textContent = 'เข้าสู่โหมด Demo'; toast('เชื่อมต่อไม่สำเร็จ', true); });
@@ -1109,7 +1335,7 @@ function loginUser() {
   var name = document.getElementById('inLoaderName').value.trim();
   if (!name) { toast('กรุณากรอกชื่อ', true); return; }
   S.role = DIRCFG[S.dir].userRole; S.name = name;
-  sessionStorage.setItem('wfdc_sess', JSON.stringify({ role: S.role, name: name, dir: S.dir }));
+  sessSave({ role: S.role, name: name, dir: S.dir });
   applyUploadForm();
   enterApp(); show('v-upload');
 }
@@ -1122,25 +1348,56 @@ function loginAdmin() {
     if (!res.ok) { document.getElementById('adminErr').classList.add('on'); return; }
     document.getElementById('adminErr').classList.remove('on');
     S.role = 'admin'; S.name = 'Warehouse Admin'; S.adminToken = res.token; S.dir = 'out';
-    sessionStorage.setItem('wfdc_sess', JSON.stringify({ role: 'admin', name: S.name, token: res.token }));
+    sessSave({ role: 'admin', name: S.name, token: res.token });
     document.getElementById('appShell').classList.add('wide');
     enterApp(); show('v-admin'); initDashDates(); applyDirTabUI(); loadDashboard();
   }).catch(function () { btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ'; toast('เชื่อมต่อไม่สำเร็จ', true); });
 }
+/* ---- Session: เก็บใน localStorage → รีเฟรช/ปิดแท็บแล้วเปิดใหม่ ยังอยู่หน้าเดิม ไม่เด้งไป login ----
+ * พนักงาน: อยู่ได้ 16 ชม. (ครอบกะ) · Admin: 6 ชม. (เท่าอายุ token ฝั่ง server) */
+var SESS_KEY = 'wfdc_sess', VIEW_KEY = 'wfdc_view';
+function lsGet(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function sessSave(o) {
+  o.exp = Date.now() + (o.role === 'admin' ? 6 : 16) * 3600 * 1000;
+  lsSet(SESS_KEY, o);
+  try { sessionStorage.removeItem(SESS_KEY); } catch (e) {}
+}
+function sessLoad() {
+  var s = lsGet(SESS_KEY);
+  if (!s) { try { s = JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null'); } catch (e) {} }   // session แบบเดิม
+  if (s && s.exp && Date.now() > s.exp) { lsDel(SESS_KEY); return null; }
+  return s;
+}
+/* จำหน้าที่เปิดค้างไว้ (แท็บ Admin / ขา / หน้าดึงข้อมูล) */
+function viewSave(patch) {
+  var v = lsGet(VIEW_KEY) || {};
+  for (var k in patch) v[k] = patch[k];
+  lsSet(VIEW_KEY, v);
+}
 function logout() {
-  sessionStorage.removeItem('wfdc_sess');
+  lsDel(SESS_KEY); lsDel(VIEW_KEY);
+  try { sessionStorage.removeItem(SESS_KEY); } catch (e) {}
   location.reload();
 }
 (function restore() {
   try {
-    var sess = JSON.parse(sessionStorage.getItem('wfdc_sess') || 'null');
+    var sess = sessLoad();
     if (!sess) return;
+    var view = lsGet(VIEW_KEY) || {};
     S.role = sess.role; S.name = sess.name; S.adminToken = sess.token || ''; S.dir = sess.dir || 'out';
     S.demo = !!sess.demo; if (S.demo) document.body.classList.add('demo-on');
+    try { S.pickMode = localStorage.getItem('wfdc_pmode') || 'qc'; } catch (e) {}
     if (sess.role === 'admin') {
+      if (view.dir) S.dir = view.dir;
       document.getElementById('appShell').classList.add('wide');
       enterApp(); show('v-admin'); initDashDates(); applyDirTabUI(); loadDashboard();
+      if (view.expDir) switchExpDir(view.expDir);
+      if (view.tab === 'exp') adminTab('exp');
+      else if (view.tab === 'up') { if (view.upDir) S.dir = view.upDir; adminTab('up'); }
     } else { applyUploadForm(); enterApp(); show('v-upload'); }
+    draftLoad();
   } catch (e) {}
 })();
 
@@ -1149,8 +1406,9 @@ function renderStores(stores) {
   S.stores = stores;
   var cur1 = document.getElementById('fStore').value;
   var cur2 = document.getElementById('expStore').value;
-  var opts = '<option value="">— เลือก Store —</option>';
-  var eopts = '<option value="">ทุก Store</option>';
+  var cur3 = document.getElementById('scStore').value;
+  var opts = '<option value="">' + t('— เลือก Store —') + '</option>';
+  var eopts = '<option value="">' + t('ทุก Store') + '</option>';
   stores.forEach(function (st) {
     var label = st.code + (st.name ? ' · ' + st.name : '');
     opts += '<option value="' + st.code + '">' + label + '</option>';
@@ -1158,7 +1416,11 @@ function renderStores(stores) {
   });
   document.getElementById('fStore').innerHTML = opts;
   document.getElementById('expStore').innerHTML = eopts;
+  document.getElementById('scStore').innerHTML = opts;
   if (cur1) document.getElementById('fStore').value = cur1;
+  else if (S.pendingStore) document.getElementById('fStore').value = S.pendingStore;     // ค่าจากแบบร่าง (ก่อนรีเฟรช)
+  if (cur3) document.getElementById('scStore').value = cur3;
+  else { try { var ps = localStorage.getItem('wfdc_scstore'); if (ps) document.getElementById('scStore').value = ps; } catch (e) {} }
   if (cur2) document.getElementById('expStore').value = cur2;
 }
 
@@ -1190,6 +1452,36 @@ function loadStores(attempt) {
 /* ตั้งภาษาตอนเปิดหน้า (ค่าเริ่มต้น: ภาษาที่เลือกไว้ครั้งก่อน) */
 applyLang();
 
+/* ================= แบบร่างฟอร์ม — รีเฟรชแล้วข้อมูลที่กรอกไว้ยังอยู่ =================
+ * (รูปที่ยังไม่อัพหายเมื่อรีเฟรช — รูปที่อัพไปแล้วอยู่บน server: กด ▶️ เริ่มถ่าย / 🚚 บันทึก อีกครั้งจะทำต่อใน Trip เดิม) */
+function draftKey() { return 'wfdc_draft_' + (S.demo ? 'd_' : '') + S.dir; }
+function draftSave() {
+  if (!S.role || !DIRCFG[S.dir]) return;
+  lsSet(draftKey(), {
+    plate: document.getElementById('fPlate').value, doc: document.getElementById('fManifest').value,
+    store: document.getElementById('fStore').value, supplier: document.getElementById('fSupplier').value,
+    truck: S.truckSize || '', at: Date.now()
+  });
+}
+function draftLoad() {
+  if (!S.role || !DIRCFG[S.dir]) return;
+  var d = lsGet(draftKey());
+  if (!d || Date.now() - (d.at || 0) > 16 * 3600 * 1000) return;
+  document.getElementById('fPlate').value = d.plate || '';
+  document.getElementById('fManifest').value = d.doc || '';
+  document.getElementById('fSupplier').value = d.supplier || '';
+  S.pendingStore = d.store || '';
+  if (d.store) document.getElementById('fStore').value = d.store;
+  S.truckSize = d.truck || '';
+  document.querySelectorAll('#truckTiles .truck').forEach(function (x) { x.classList.toggle('sel', !!d.truck && x.dataset.v === d.truck); });
+}
+function draftClear() { lsDel(draftKey()); S.pendingStore = ''; }
+['fPlate', 'fManifest', 'fStore', 'fSupplier'].forEach(function (id) {
+  var el = document.getElementById(id);
+  el.addEventListener('input', draftSave);
+  el.addEventListener('change', draftSave);
+});
+
 /* ================= TRUCK TILES ================= */
 document.getElementById('truckTiles').addEventListener('click', function (e) {
   var tile = e.target.closest('.truck');
@@ -1197,6 +1489,7 @@ document.getElementById('truckTiles').addEventListener('click', function (e) {
   document.querySelectorAll('.truck').forEach(function (t) { t.classList.remove('sel'); });
   tile.classList.add('sel');
   S.truckSize = tile.dataset.v;
+  draftSave();
 });
 
 /* ================= PHOTOS: pick + compress ================= */
@@ -1315,10 +1608,13 @@ function autoStatus(text, cls) {
   dot.className = 'dot' + (cls ? ' ' + cls : '');
 }
 function autoUIMode(active) {
-  var demo = !!S.demo;
-  document.getElementById('btnStartAuto').style.display = (demo && !active) ? 'block' : 'none';
-  document.getElementById('btnFinishAuto').style.display = (demo && active) ? 'block' : 'none';
-  document.getElementById('btnCancelAuto').style.display = (demo && active) ? 'block' : 'none';
+  var av = autoAvail();
+  document.getElementById('btnStartAuto').style.display = (av && !active) ? 'block' : 'none';
+  document.getElementById('btnFinishAuto').style.display = (av && active) ? 'block' : 'none';
+  document.getElementById('btnCancelAuto').style.display = (av && active) ? 'block' : 'none';
+  // ระหว่างอัพอัตโนมัติ ซ่อนปุ่มแบบเดิม กันกดซ้อน
+  document.getElementById('btnSubmit').style.display = (classicAvail() && !active) ? 'block' : 'none';
+  var orl = document.getElementById('modeOr'); if (orl) orl.style.display = (av && classicAvail() && !active) ? 'block' : 'none';
   // ล็อกช่องข้อมูลระหว่างถ่าย กันแก้กลางคัน (trip สร้างไปแล้ว)
   ['fPlate', 'fManifest', 'fStore', 'fSupplier'].forEach(function (id) {
     var el = document.getElementById(id); if (el) el.disabled = active;
@@ -1329,23 +1625,28 @@ function startAutoTrip() {
   var v = collectTripFields();
   if (!v) return;
   var btn = document.getElementById('btnStartAuto');
-  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังสร้าง Trip...';
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> ' + tr('กำลังสร้าง Trip...');
   api({ action: 'createTrip', dir: S.dir, user: S.name, plate: v.plate, docno: v.docno,
         partyCode: v.partyCode, partyName: v.partyName, truckSize: v.truckSize }, { retries: 2 })
     .then(function (res) {
-      btn.disabled = false; btn.innerHTML = '▶️ เริ่มถ่ายรูป (สร้าง Trip)';
+      btn.disabled = false; btn.textContent = t('▶️ เริ่มถ่าย (อัพอัตโนมัติ)');
       if (!res.ok) {
         if (res.error === 'DOC_DUPLICATE') { document.getElementById('manErr').classList.add('on'); toast('เลขเอกสารซ้ำ', true); }
         else toast('สร้าง Trip ไม่สำเร็จ: ' + res.error, true);
         return;
       }
+      // งานค้างเดิม (UPLOADING) → ใช้ Trip เดิม เก็บรูปเก่า แล้วนับเลขรูปต่อ
+      var base = res.existingPhotos || 0;
       AUTO = { on: true, tripId: res.tripId, folderId: res.folderId, row: res.row || 0, serverTime: res.time,
-               nextIdx: 0, sent: 0, queue: [], busy: false, failed: 0 };
+               base: base, nextIdx: base, sent: 0, queue: [], busy: false, failed: 0 };
       autoUIMode(true);
       autoStatus('พร้อมถ่ายรูป — รูปจะทยอยอัพโหลดเองอัตโนมัติ', 'ok');
-      toast('สร้าง Trip แล้ว เริ่มถ่ายรูปได้เลย');
+      if (res.resumed) toast('ทำงานต่อจาก Trip เดิม (มีรูปแล้ว ' + base + ' รูป)');
+      else toast('สร้าง Trip แล้ว เริ่มถ่ายรูปได้เลย');
+      // รูปที่ถ่ายไว้ก่อนกดเริ่ม → ส่งขึ้นด้วย
+      if (S.photos.length) autoEnqueue(S.photos.slice());
     }).catch(function () {
-      btn.disabled = false; btn.innerHTML = '▶️ เริ่มถ่ายรูป (สร้าง Trip)';
+      btn.disabled = false; btn.textContent = t('▶️ เริ่มถ่าย (อัพอัตโนมัติ)');
       toast('เชื่อมต่อ server ไม่ได้', true);
     });
 }
@@ -1392,7 +1693,7 @@ function autoFlushDone() {
   if (AUTO.finishing) {
     AUTO.finishing = false;
     autoStatus('กำลังปิด Trip...', 'busy');
-    api({ action: 'finalizeTrip', dir: S.dir, tripId: AUTO.tripId, row: AUTO.row, photoCount: AUTO.sent },
+    api({ action: 'finalizeTrip', dir: S.dir, tripId: AUTO.tripId, row: AUTO.row, photoCount: (AUTO.base || 0) + AUTO.sent },
         { retries: 1, timeout: 20000 })
       .then(function (res) {
         var btn = document.getElementById('btnFinishAuto');
@@ -1403,7 +1704,7 @@ function autoFlushDone() {
           toast('ปิด Trip ไม่สำเร็จ: ' + ((res && res.error) || 'error'), true);
           return;
         }
-        var st = AUTO.serverTime, total = AUTO.sent;
+        var st = AUTO.serverTime, total = (AUTO.base || 0) + AUTO.sent;
         AUTO.on = false; autoUIMode(false);
         document.getElementById('autoStat').style.display = 'none';
         btn.disabled = false; btn.textContent = '✅ เสร็จสิ้น — ปิด Trip';
@@ -1419,7 +1720,7 @@ function autoFlushDone() {
 }
 function finishAutoTrip() {
   if (!AUTO.on) return;
-  if (!AUTO.sent && !AUTO.queue.length) { toast('ยังไม่มีรูปเลย ถ่ายอย่างน้อย 1 รูปก่อน', true); return; }
+  if (!AUTO.sent && !AUTO.queue.length && !AUTO.base) { toast('ยังไม่มีรูปเลย ถ่ายอย่างน้อย 1 รูปก่อน', true); return; }
   var btn = document.getElementById('btnFinishAuto');
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> กำลังปิด Trip...';
   AUTO.finishing = true;
@@ -1439,6 +1740,10 @@ function collectTripFields() {
   var plate = document.getElementById('fPlate').value.trim();
   var docno = document.getElementById('fManifest').value.trim();
   var isPick = (S.dir === 'picking');
+  if (isPick && docno) {
+    docno = normLabel(docno);
+    document.getElementById('fManifest').value = docno;
+  }
   var partyCode = '', partyName = '';
   if (S.dir === 'out' || isPick) {
     var sel = document.getElementById('fStore');
@@ -1451,6 +1756,7 @@ function collectTripFields() {
   if (isPick) {
     if (!docno) { toast('กรอก Outbound Label ก่อน', true); return null; }
     if (!partyCode) { toast('เลือก Store ก่อน', true); return null; }
+    if (!labelOk(docno) && !confirm(tr('รูปแบบ Outbound Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)') + '\n' + docno + '\n\n' + tr('ยืนยันใช้เลขนี้?'))) return null;
   } else {
     if (!plate) { toast('กรอกเลขทะเบียนรถก่อน', true); return null; }
     if (!docno) { toast('กรอกเลขเอกสารก่อน', true); return null; }
@@ -1483,7 +1789,12 @@ function submitTrip() {
         return;
       }
       S.tripRow = res.row || 0;
-      uploadInBatches(res.folderId, res.tripId, res.time);
+      // กดซ้ำหลังอัพสะดุด (Trip เดิม รูปชุดเดิม) → ทับชื่อไฟล์เดิม (ไม่ซ้ำ)
+      // เป็นงานค้างจากรอบก่อน (เช่น ยกเลิก/ปิดแอป) → เก็บรูปเก่า แล้วนับเลขต่อ
+      var base = (S.classic && S.classic.tripId === res.tripId) ? S.classic.base : (res.existingPhotos || 0);
+      S.classic = { tripId: res.tripId, base: base };
+      if (res.resumed && base) toast('ทำงานต่อจาก Trip เดิม (มีรูปแล้ว ' + base + ' รูป)');
+      uploadInBatches(res.folderId, res.tripId, res.time, base);
     }).catch(function () {
       btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
       prog.classList.remove('on');
@@ -1491,8 +1802,9 @@ function submitTrip() {
     });
 }
 
-function uploadInBatches(folderId, tripId, serverTime) {
+function uploadInBatches(folderId, tripId, serverTime, base) {
   var BATCH = 3;          // ก้อนละ 3 รูป — payload เบา GAS ไม่ timeout
+  base = base || 0;       // จำนวนรูปเดิมใน Trip ที่ทำต่อ
   var total = S.photos.length;
   var btn = document.getElementById('btnSubmit');
   function pad3(n) { return ('00' + n).slice(-3); }
@@ -1505,7 +1817,7 @@ function uploadInBatches(folderId, tripId, serverTime) {
   function sendNext() {
     if (bi >= batches.length) {
       setProg(100, 'กำลังปิด Trip...');
-      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, row: S.tripRow || 0, photoCount: total }, { retries: 1, timeout: 20000 })
+      api({ action: 'finalizeTrip', dir: S.dir, tripId: tripId, row: S.tripRow || 0, photoCount: base + total }, { retries: 1, timeout: 20000 })
         .then(function (res) {
           btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
           if (!res || !res.ok) {
@@ -1513,7 +1825,8 @@ function uploadInBatches(folderId, tripId, serverTime) {
             toast('ปิด Trip ไม่สำเร็จ: ' + ((res && res.error) || 'error'), true);
             return;
           }
-          showSuccess(serverTime, total);
+          S.classic = null;
+          showSuccess(serverTime, base + total);
         }).catch(function () {
           btn.disabled = false; btn.textContent = '🚚 บันทึกและอัพโหลด';
           toast('ปิด Trip ไม่สำเร็จ — ลองกดบันทึกอีกครั้ง (รูปที่อัพไปแล้วไม่หาย)', true);
@@ -1523,7 +1836,7 @@ function uploadInBatches(folderId, tripId, serverTime) {
     var b = batches[bi];
     Promise.all(b.items.map(function (p, k) {
       return blobToBase64(p.blob).then(function (b64) {
-        return { name: tripId + '_' + pad3(b.start + k + 1) + '.jpg', data: b64 };  // deterministic + upsert = retry ปลอดภัย
+        return { name: tripId + '_' + pad3(base + b.start + k + 1) + '.jpg', data: b64 };  // deterministic + upsert = retry ปลอดภัย
       });
     })).then(function (payloadPhotos) {
       // retry อัตโนมัติ 3 ครั้งถอยเวลา 2->4->8 วิ + timeout 30 วิ/ครั้ง
@@ -1546,6 +1859,7 @@ function uploadInBatches(folderId, tripId, serverTime) {
 }
 
 function showSuccess(serverTime, count) {
+  draftClear();
   var meta = document.getElementById('successMeta');
   var isPick = (S.dir === 'picking');
   var partyRow;
@@ -1572,18 +1886,387 @@ function resetUpload() {
   document.getElementById('fSupplier').value = '';
   document.querySelectorAll('.truck').forEach(function (t) { t.classList.remove('sel'); });
   S.truckSize = '';
+  draftClear();
   clearPhotos();
-  AUTO.on = false; AUTO.finishing = false; AUTO.queue = []; AUTO.sent = 0; AUTO.nextIdx = 0;
+  AUTO.on = false; AUTO.finishing = false; AUTO.queue = []; AUTO.sent = 0; AUTO.nextIdx = 0; AUTO.base = 0;
+  S.classic = null;
   autoUIMode(false);
   var as = document.getElementById('autoStat'); if (as) as.style.display = 'none';
-  var fb = document.getElementById('btnFinishAuto'); if (fb) { fb.disabled = false; fb.textContent = '✅ เสร็จสิ้น — ปิด Trip'; }
+  var fb = document.getElementById('btnFinishAuto'); if (fb) { fb.disabled = false; fb.textContent = t('✅ เสร็จสิ้น — ปิด Trip'); }
   document.getElementById('prog').classList.remove('on');
   show(S.role === 'admin' ? 'v-admin' : 'v-upload');
   if (S.role === 'admin') adminTab('up');
 }
 
+/* ================= OUTBOUND LABEL =================
+ * รูปแบบ: O + 847(BU) + YYMMDD + เลขรัน 4 หลัก = "O" + ตัวเลข 13 หลัก เช่น O8472609240050 */
+function normLabel(v) {
+  var s = String(v == null ? '' : v).toUpperCase().replace(/\s+/g, '');
+  if (/^0\d{13}$/.test(s)) s = 'O' + s.slice(1);   // พิมพ์เลขศูนย์แทนตัว O
+  return s;
+}
+function labelOk(s) { return /^O\d{13}$/.test(s); }
+document.getElementById('fManifest').addEventListener('blur', function () {
+  if (S.dir === 'picking' && this.value.trim()) this.value = normLabel(this.value);
+});
+
+/* ================= IN-APP BROWSER (LINE / Facebook) =================
+ * กล้อง/อัพโหลดในแอปพวกนี้มักใช้ไม่ได้ → LINE เด้งออกเบราว์เซอร์ให้เอง / ที่เหลือแสดงแถบแนะนำ */
+(function inAppCheck() {
+  if (!IN_APP) return;
+  if (IN_APP === 'line' && !/[?&]openExternalBrowser=1/.test(location.search)) {
+    var u = location.href.split('#')[0];
+    try { location.replace(u + (u.indexOf('?') >= 0 ? '&' : '?') + 'openExternalBrowser=1' + location.hash); } catch (e) {}
+  }
+  document.getElementById('inappBar').classList.add('on');
+  if (/Android/i.test(navigator.userAgent)) document.getElementById('btnOpenChrome').style.display = 'inline-block';
+})();
+function openInChrome() {
+  location.href = 'intent://' + location.host + location.pathname + location.search.replace(/[?&]openExternalBrowser=1/, '') +
+    '#Intent;scheme=https;package=com.android.chrome;end';
+}
+function copyPageLink() {
+  var u = location.href.replace(/[?&]openExternalBrowser=1/, '');
+  function fallback() {
+    var ta = document.createElement('textarea'); ta.value = u; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('คัดลอกลิงก์แล้ว — เปิด Safari/Chrome แล้ววางลิงก์'); }
+    catch (e) { toast(u); }
+    ta.remove();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(u).then(function () { toast('คัดลอกลิงก์แล้ว — เปิด Safari/Chrome แล้ววางลิงก์'); }, fallback);
+  } else fallback();
+}
+
+/* ================= PICKING: โหมด บันทึกงาน QC / สแกน Label ================= */
+function setPickMode(m, silent) {
+  if (S.dir !== 'picking') m = 'qc';
+  S.pickMode = m;
+  try { localStorage.setItem('wfdc_pmode', m); } catch (e) {}
+  document.getElementById('pmQc').classList.toggle('on', m === 'qc');
+  document.getElementById('pmScan').classList.toggle('on', m === 'scan');
+  document.getElementById('qcPane').style.display = (m === 'qc') ? 'block' : 'none';
+  document.getElementById('scanPane').style.display = (m === 'scan') ? 'block' : 'none';
+  if (m === 'scan') {
+    scanRestore();
+    renderScanList();
+    if (!('BarcodeDetector' in window)) loadJsQR().catch(function () {});   // โหลดตัวอ่าน QR รอไว้ก่อน
+    if (!silent && IN_APP) toast('กล้องในแอป LINE/Facebook อาจใช้ไม่ได้ — เปิดใน Safari/Chrome', true);
+  } else {
+    stopScanCam();
+  }
+}
+
+/* ================= SCAN LABEL ================= */
+function scanKey() { return 'wfdc_scan_' + (S.demo ? 'demo_' : '') + 'pending'; }
+function pendingCount() { return SC.items.filter(function (x) { return x.st === 'pend'; }).length; }
+function persistScans() {
+  try {
+    var keep = SC.items.filter(function (x) { return x.st === 'pend' || x.st === 'sending'; })
+      .map(function (x) { return { label: x.label, palletType: x.palletType, storeCode: x.storeCode, storeName: x.storeName, scanner: x.scanner, at: x.at, st: 'pend' }; });
+    localStorage.setItem(scanKey(), JSON.stringify(keep));
+  } catch (e) {}
+}
+/* รายการที่ยังไม่ได้บันทึก (เช่น เน็ตหลุด/ปิดแอป) เก็บในเครื่องไว้ — เปิดโหมดสแกนอีกครั้งจะบันทึกต่อให้ */
+function scanRestore() {
+  var key = scanKey();
+  if (SC.key === key) return;
+  SC.key = key;
+  var list = [];
+  try { list = JSON.parse(localStorage.getItem(key) || '[]') || []; } catch (e) {}
+  var have = {};
+  SC.items.forEach(function (x) { have[x.label.toUpperCase()] = 1; });
+  var added = 0;
+  list.forEach(function (x) {
+    if (!x || !x.label || have[x.label.toUpperCase()]) return;
+    x.st = 'pend'; SC.items.push(x); added++;
+  });
+  if (added) {
+    toast('มีรายการค้างบันทึก ' + added + ' รายการ — กำลังบันทึกให้');
+    setTimeout(function () { flushScans(false); }, 400);
+  }
+}
+document.getElementById('scTypes').addEventListener('click', function (e) {
+  var tile = e.target.closest('.truck');
+  if (!tile) return;
+  document.querySelectorAll('#scTypes .truck').forEach(function (x) { x.classList.remove('sel'); });
+  tile.classList.add('sel');
+  SC.type = tile.dataset.v;
+});
+function scanStoreChanged() {
+  try { localStorage.setItem('wfdc_scstore', document.getElementById('scStore').value); } catch (e) {}
+  if (pendingCount()) flushScans(false);   // ชุดเดิมของ Store ก่อนหน้า บันทึกให้เลย
+}
+document.getElementById('scManual').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); addManualScan(); }
+});
+function addManualScan() {
+  var el = document.getElementById('scManual');
+  if (!el.value.trim()) { toast('พิมพ์เลข Label ก่อน', true); return; }
+  if (addScan(el.value, 'manual')) el.value = '';
+  el.focus();
+}
+function addScan(raw, src) {
+  var label = normLabel(raw);
+  if (!label) return false;
+  var sel = document.getElementById('scStore');
+  if (!sel.value) { toast('เลือก Store ก่อน', true); buzz(true); return false; }
+  var key = label.toUpperCase();
+  var ex = SC.items.filter(function (x) { return x.label.toUpperCase() === key; })[0];
+  if (ex) {
+    toast(ex.st === 'dup' ? 'เลขนี้เคยบันทึกแล้ว: ' + label : 'เลขนี้สแกนไปแล้ว: ' + label, true);
+    buzz(true);
+    return false;
+  }
+  if (!labelOk(label) &&
+      !confirm(tr('รูปแบบ Label ไม่ตรง (ควรเป็น O + ตัวเลข 13 หลัก)') + '\n' + label + '\n\n' + tr('ยืนยันเพิ่มเลขนี้?'))) return false;
+  SC.items.unshift({ label: label, palletType: SC.type, storeCode: sel.value, storeName: sel.options[sel.selectedIndex].text,
+                     scanner: S.name, at: Date.now(), st: 'pend' });
+  buzz(false);
+  if (src === 'cam') toast('✓ ' + label);
+  persistScans();
+  renderScanList();
+  if (pendingCount() >= SCAN_AUTO_N) flushScans(false);
+  return true;
+}
+function removeScan(i) {
+  var x = SC.items[i];
+  if (!x || x.st !== 'pend') return;
+  SC.items.splice(i, 1);
+  persistScans(); renderScanList();
+}
+function clearScanList() {
+  SC.items = SC.items.filter(function (x) { return x.st === 'pend' || x.st === 'sending'; });
+  renderScanList();
+}
+function scanStat(text, cls) {
+  document.getElementById('scStat').style.display = 'flex';
+  document.getElementById('scStatText').textContent = tr(text);
+  document.getElementById('scDot').className = 'dot' + (cls ? ' ' + cls : '');
+}
+function fmtClock(ms) {
+  var d = new Date(ms), p = function (x) { return (x < 10 ? '0' : '') + x; };
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function renderScanList() {
+  var all = SC.items.length, saved = 0, pend = 0;
+  SC.items.forEach(function (x) { if (x.st === 'saved') saved++; else if (x.st === 'pend' || x.st === 'sending') pend++; });
+  document.getElementById('scNAll').textContent = all;
+  document.getElementById('scNSaved').textContent = saved;
+  document.getElementById('scNPend').textContent = pend;
+  document.getElementById('scTag').textContent = all;
+  document.getElementById('btnScanClear').style.display = (all - pend) > 0 ? 'block' : 'none';
+  var wrap = document.getElementById('scList');
+  if (!all) { wrap.innerHTML = '<div class="empty">' + t('ยังไม่มีรายการ — เลือก Store แล้วเริ่มสแกน') + '</div>'; return; }
+  var html = '';
+  SC.items.slice(0, 150).forEach(function (x, i) {
+    var st = x.st === 'saved' ? (x.already ? t('✅ มีในระบบแล้ว') : '✅')
+           : x.st === 'dup' ? '⚠️ ' + t('ซ้ำ') + (x.dupStore ? ' (' + x.dupStore + ')' : '')
+           : x.st === 'sending' ? '⏳' : '🕓';
+    html += '<div class="scrow ' + x.st + '">' +
+      '<span class="lb">' + esc(x.label) + (labelOk(x.label) ? '' : ' ⚠️') +
+        '<span class="sub">' + esc(x.storeCode) + ' · ' + fmtClock(x.at) + (x.st === 'dup' ? ' · ' + t('เคยบันทึกที่ Store อื่นแล้ว') : '') + '</span></span>' +
+      '<span class="bd">' + x.palletType + '</span>' +
+      '<span class="st">' + st + '</span>' +
+      (x.st === 'pend' ? '<button class="x" onclick="removeScan(' + i + ')">✕</button>' : '') +
+    '</div>';
+  });
+  wrap.innerHTML = html;
+}
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
+/* บันทึกขึ้น server — แยกส่งตาม Store+ผู้สแกน ก้อนละไม่เกิน 50 · ส่งซ้ำได้ปลอดภัย (server กันซ้ำ) */
+function flushScans(manual) {
+  var pend = SC.items.filter(function (x) { return x.st === 'pend'; });
+  if (!pend.length) {
+    if (manual) toast(SC.items.length ? 'บันทึกครบแล้ว ไม่มีรายการค้าง' : 'ยังไม่มีรายการ', !SC.items.length);
+    return;
+  }
+  if (SC.busy) { SC.again = true; return; }
+  SC.busy = true;
+  var groups = {}, order = [];
+  pend.forEach(function (x) {
+    var g = x.storeCode + '|' + (x.scanner || S.name);
+    if (!groups[g]) { groups[g] = []; order.push(g); }
+    groups[g].push(x);
+  });
+  var chunks = [];
+  order.forEach(function (g) { for (var i = 0; i < groups[g].length; i += 50) chunks.push(groups[g].slice(i, i + 50)); });
+  pend.forEach(function (x) { x.st = 'sending'; });
+  renderScanList();
+  scanStat('กำลังบันทึก ' + pend.length + ' รายการ...', 'busy');
+  var btn = document.getElementById('btnScanSave');
+  btn.disabled = true;
+  var saved = 0, dups = 0, failed = false;
+  var chain = Promise.resolve();
+  chunks.forEach(function (c) {
+    chain = chain.then(function () {
+      return api({ action: 'savePalletScans', scanner: c[0].scanner || S.name, storeCode: c[0].storeCode, storeName: c[0].storeName,
+                   items: c.map(function (x) { return { label: x.label, palletType: x.palletType }; }) }, { retries: 2, timeout: 30000 })
+        .then(function (res) {
+          if (!res || !res.ok) throw new Error((res && res.error) || 'fail');
+          var ok = {}, al = {}, dupMap = {};
+          (res.savedLabels || []).forEach(function (l) { ok[String(l).toUpperCase()] = 1; });
+          (res.already || []).forEach(function (l) { al[String(l).toUpperCase()] = 1; });
+          (res.duplicates || []).forEach(function (d) { dupMap[String(d.label).toUpperCase()] = d.store || ''; });
+          c.forEach(function (x) {
+            var k = x.label.toUpperCase();
+            if (k in dupMap) { x.st = 'dup'; x.dupStore = dupMap[k]; dups++; }
+            else if (ok[k] || al[k]) { x.st = 'saved'; x.already = !ok[k]; saved++; }
+            else x.st = 'pend';
+          });
+        }).catch(function () {
+          failed = true;
+          c.forEach(function (x) { if (x.st === 'sending') x.st = 'pend'; });
+        });
+    });
+  });
+  return chain.then(function () {
+    SC.busy = false; btn.disabled = false;
+    persistScans(); renderScanList();
+    if (failed) {
+      SC.retry++;
+      scanStat('บันทึกไม่สำเร็จ — เช็คสัญญาณ ระบบจะลองใหม่อัตโนมัติ', 'err');
+      toast('บันทึกไม่สำเร็จ — รายการยังอยู่ในเครื่อง ระบบจะลองใหม่', true);
+      if (SC.retry <= 5) setTimeout(function () { flushScans(false); }, 5000 * SC.retry);
+    } else {
+      SC.retry = 0;
+      scanStat('บันทึกแล้ว ' + saved + ' รายการ' + (dups ? ' · ซ้ำ ' + dups + ' รายการ (ไม่บันทึก)' : ''), dups ? 'err' : 'ok');
+      if (dups) { toast('พบเลขซ้ำ ' + dups + ' รายการ — เคยบันทึกที่ Store อื่นแล้ว ไม่บันทึกซ้ำ', true); buzz(true); }
+      else if (manual) toast('บันทึกแล้ว ' + saved + ' รายการ');
+    }
+    if (SC.again) { SC.again = false; if (pendingCount() >= SCAN_AUTO_N || manual) flushScans(manual); }
+  });
+}
+
+/* ---- เสียง/สั่น ตอนสแกน ---- */
+function initBeep() {
+  try { if (!SC.audio) SC.audio = new (window.AudioContext || window.webkitAudioContext)(); if (SC.audio.state === 'suspended') SC.audio.resume(); } catch (e) {}
+}
+function buzz(bad) {
+  try { if (navigator.vibrate) navigator.vibrate(bad ? [90, 60, 90] : 60); } catch (e) {}
+  try {
+    if (!SC.audio) return;
+    var o = SC.audio.createOscillator(), g = SC.audio.createGain();
+    o.frequency.value = bad ? 220 : 1320; g.gain.value = 0.08;
+    o.connect(g); g.connect(SC.audio.destination);
+    o.start(); o.stop(SC.audio.currentTime + (bad ? 0.25 : 0.09));
+  } catch (e) {}
+}
+
+/* ---- กล้อง + อ่าน QR: Android/Chrome ใช้ BarcodeDetector ในเครื่อง · iOS/อื่นๆ ใช้ jsQR ---- */
+function loadJsQR() {
+  if (window.jsQR) return Promise.resolve();
+  if (jsqrLoading) return jsqrLoading;
+  jsqrLoading = new Promise(function (resolve, reject) {
+    var i = 0;
+    (function next() {
+      if (i >= JSQR_URLS.length) { jsqrLoading = null; reject(new Error('NO_DECODER')); return; }
+      var sc = document.createElement('script');
+      sc.src = JSQR_URLS[i++];
+      sc.onload = function () { window.jsQR ? resolve() : next(); };
+      sc.onerror = next;
+      document.head.appendChild(sc);
+    })();
+  });
+  return jsqrLoading;
+}
+function jsqrDetector() {
+  return loadJsQR().then(function () {
+    var cv = document.createElement('canvas');
+    var ctx = cv.getContext('2d', { willReadFrequently: true });
+    return {
+      kind: 'jsqr',
+      detect: function (v) {
+        var w = v.videoWidth, h = v.videoHeight;
+        if (!w || !h) return Promise.resolve('');
+        var k = Math.min(1, 800 / Math.max(w, h));
+        cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+        ctx.drawImage(v, 0, 0, cv.width, cv.height);
+        var img = ctx.getImageData(0, 0, cv.width, cv.height);
+        var r = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        return Promise.resolve(r ? r.data : '');
+      }
+    };
+  });
+}
+function getDetector() {
+  if (SC.detector) return Promise.resolve(SC.detector);
+  if ('BarcodeDetector' in window) {
+    return Promise.resolve(window.BarcodeDetector.getSupportedFormats ? window.BarcodeDetector.getSupportedFormats() : ['qr_code'])
+      .then(function (f) {
+        if (f.indexOf('qr_code') < 0) throw new Error('no qr');
+        var bd = new window.BarcodeDetector({ formats: ['qr_code'] });
+        return { kind: 'native', detect: function (v) { return bd.detect(v).then(function (c) { return c.length ? c[0].rawValue : ''; }); } };
+      }).catch(function () { return jsqrDetector(); });
+  }
+  return jsqrDetector();
+}
+function startScanCam() {
+  if (!document.getElementById('scStore').value) { toast('เลือก Store ก่อน', true); return; }
+  if (SC.stream) return;
+  initBeep();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast(IN_APP ? 'แอปนี้เปิดกล้องไม่ได้ — เปิดลิงก์ใน Safari/Chrome' : 'เบราว์เซอร์นี้เปิดกล้องไม่ได้ — พิมพ์เลข Label แทน', true);
+    return;
+  }
+  var btn = document.getElementById('btnScanCam');
+  btn.disabled = true;
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+    .then(function (stream) {
+      SC.stream = stream;
+      var v = document.getElementById('scanVideo');
+      v.setAttribute('playsinline', ''); v.muted = true;   // iOS: ต้องมี playsinline ไม่งั้นเด้งเต็มจอ
+      v.srcObject = stream;
+      var p = v.play(); if (p && p.catch) p.catch(function () {});
+      document.getElementById('scanCamWrap').style.display = 'block';
+      btn.style.display = 'none'; btn.disabled = false;
+      return getDetector().then(function (det) { SC.detector = det; scanLoop(); }, function () {
+        stopScanCam();
+        toast('โหลดตัวอ่าน QR ไม่สำเร็จ — เช็คเน็ต หรือพิมพ์เลข Label แทน', true);
+      });
+    }).catch(function (err) {
+      btn.disabled = false;
+      stopScanCam();
+      toast(err && err.name === 'NotAllowedError'
+        ? 'ไม่ได้รับอนุญาตใช้กล้อง — อนุญาตกล้องในการตั้งค่าเบราว์เซอร์ แล้วลองใหม่'
+        : 'เปิดกล้องไม่ได้ — พิมพ์เลข Label แทนได้', true);
+    });
+}
+function scanLoop() {
+  if (!SC.stream || !SC.detector) return;
+  var v = document.getElementById('scanVideo');
+  if (v.readyState < 2) { SC.timer = setTimeout(scanLoop, 200); return; }
+  SC.detector.detect(v).then(function (code) { if (code) onScanCode(code); })
+    .catch(function () {})
+    .then(function () { if (SC.stream) SC.timer = setTimeout(scanLoop, 180); });
+}
+function onScanCode(code) {
+  var label = normLabel(code), now = Date.now();
+  // QR เดิมยังค้างอยู่หน้ากล้อง → ไม่นับซ้ำ (ต้องเอาออกจากกล้องก่อน ~3 วิ)
+  if (label === SC.last && now - SC.lastAt < 3000) { SC.lastAt = now; return; }
+  SC.last = label;
+  var fr = document.getElementById('scanFrame');
+  fr.classList.add('hit'); setTimeout(function () { fr.classList.remove('hit'); }, 350);
+  addScan(code, 'cam');
+  SC.lastAt = Date.now();
+}
+function stopScanCam() {
+  clearTimeout(SC.timer); SC.timer = null;
+  if (SC.stream) { SC.stream.getTracks().forEach(function (tk) { try { tk.stop(); } catch (e) {} }); SC.stream = null; }
+  var v = document.getElementById('scanVideo'); if (v) v.srcObject = null;
+  var w = document.getElementById('scanCamWrap'); if (w) w.style.display = 'none';
+  var b = document.getElementById('btnScanCam'); if (b) { b.style.display = 'block'; b.disabled = false; }
+}
+document.addEventListener('visibilitychange', function () { if (document.hidden) stopScanCam(); });
+window.addEventListener('beforeunload', function (e) {
+  if (pendingCount() || (AUTO.on && (AUTO.queue.length || AUTO.busy))) { e.preventDefault(); e.returnValue = ''; }
+});
+
 /* ================= ADMIN: TABS ================= */
 function adminTab(which) {
+  viewSave({ tab: which });
   ['dash', 'exp'].forEach(function (k) {
     document.getElementById('adm-' + k).style.display = 'none';
   });
@@ -1595,13 +2278,17 @@ function adminTab(which) {
     // Admin สลับขาอัพโหลดได้
     document.getElementById('upDirToggle').style.display = 'flex';
     if (S.dir === 'all') S.dir = 'out';
+    if (S.dir === 'scan') { S.dir = 'picking'; S.pickMode = 'scan'; }   // มาจากแท็บ Scan → เปิดหน้าสแกนให้เลย
     document.getElementById('upDirOut').classList.toggle('on', S.dir === 'out');
     document.getElementById('upDirIn').classList.toggle('on', S.dir === 'in');
     document.getElementById('upDirPicking').classList.toggle('on', S.dir === 'picking');
+    viewSave({ upDir: S.dir });
     applyUploadForm();
+    draftLoad();
     show('v-upload');
     return;
   }
+  stopScanCam();
   show('v-admin');
   document.getElementById('adm-' + which).style.display = 'block';
   document.getElementById(which === 'dash' ? 'tabDash' : 'tabExp').classList.add('on');
@@ -1610,6 +2297,7 @@ function adminTab(which) {
 function switchUploadDir(dir) {
   if (S.dir === dir) return;
   S.dir = dir;
+  viewSave({ upDir: dir });
   document.getElementById('upDirOut').classList.toggle('on', dir === 'out');
   document.getElementById('upDirIn').classList.toggle('on', dir === 'in');
   document.getElementById('upDirPicking').classList.toggle('on', dir === 'picking');
@@ -1622,8 +2310,10 @@ function switchUploadDir(dir) {
   document.querySelectorAll('.truck').forEach(function (t) { t.classList.remove('sel'); });
   S.truckSize = '';
   clearPhotos();
+  S.classic = null;
   document.getElementById('manErr').classList.remove('on');
   applyUploadForm();
+  draftLoad();
 }
 
 /* ================= ADMIN: DASHBOARD ================= */
@@ -1640,17 +2330,23 @@ function initDashDates() {
   document.getElementById('planDate').value = fmtDate(today);
 }
 function applyDirTabUI() {
-  var isAll = (S.dir === 'all');
+  var isAll = (S.dir === 'all'), isScan = (S.dir === 'scan');
   document.getElementById('dirAll').classList.toggle('on', isAll);
+  document.getElementById('dirScan').classList.toggle('on', isScan);
+  document.getElementById('scanView').style.display = isScan ? 'block' : 'none';
+  document.getElementById('dsTag').textContent = isAll ? 'ALL' : isScan ? 'SCAN' : (DIRTAG[S.dir] || 'OUTBOUND');
+  setPh(document.getElementById('dsText'), isScan ? 'เลข Label / Store / ชื่อผู้สแกน'
+    : S.dir === 'picking' ? 'Outbound Label / Store / ชื่อผู้ตรวจ' : 'ทะเบียน / เลขเอกสาร / Store / ชื่อผู้บันทึก');
+  document.getElementById('stPhotosLbl').textContent = isScan ? 'Full' : t('รูปทั้งหมด');
   document.getElementById('dirOut').classList.toggle('on', S.dir === 'out');
   document.getElementById('dirIn').classList.toggle('on', S.dir === 'in');
   document.getElementById('dirPicking').classList.toggle('on', S.dir === 'picking');
   document.getElementById('allView').style.display = isAll ? 'block' : 'none';
   document.getElementById('demoTools').style.display = S.demo ? 'block' : 'none';
-  document.getElementById('deptView').style.display = isAll ? 'none' : 'block';
-  document.getElementById('stTripsLbl').textContent = t(isAll ? 'Trip รวมทุกแผนก' : 'Trip ทั้งหมด');
-  document.getElementById('stTrucksLbl').textContent = t((S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า');
-  if (!isAll) {
+  document.getElementById('deptView').style.display = (isAll || isScan) ? 'none' : 'block';
+  document.getElementById('stTripsLbl').textContent = t(isAll ? 'Trip รวมทุกแผนก' : isScan ? 'พาเลททั้งหมด' : 'Trip ทั้งหมด');
+  document.getElementById('stTrucksLbl').textContent = isScan ? 'Half' : t((S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า');
+  if (!isAll && !isScan) {
     document.getElementById('planTag').textContent = DIRTAG[S.dir] || 'OUTBOUND';
     document.getElementById('topTitle').firstChild.nodeValue =
       t(S.dir === 'in' ? 'Supplier ที่ส่ง Trip มากที่สุด' : 'สาขาที่มี Trip มากที่สุด') + ' ';
@@ -1658,7 +2354,9 @@ function applyDirTabUI() {
 }
 function switchDir(dir) {
   S.dir = dir;
+  viewSave({ dir: dir });
   applyDirTabUI();
+  dsReset();
   loadDashboard();
 }
 function clearDemoData() {
@@ -1679,6 +2377,7 @@ function loadDashboard(force) {
   var planDate = document.getElementById('planDate').value;
   var ph = document.getElementById('planHint'); if (ph) ph.style.display = 'none';
   if (S.dir === 'all') { loadSummaryAll(from, to, force); return; }
+  if (S.dir === 'scan') { loadScanSummary(from, to, force); return; }
   document.getElementById('dayBars').innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span></div>';
   api({ action: 'getDashboard', token: S.adminToken, dir: S.dir, from: from, to: to, planDate: planDate, noCache: force ? 1 : 0 }).then(function (res) {
     if (!res.ok) {
@@ -1696,8 +2395,7 @@ function loadDashboard(force) {
       document.getElementById('planOut').value = res.planForDate.planOut || '';
       document.getElementById('planPicking').value = res.planForDate.planPicking || '';
     }
-    // รายการ trip โหลดแยกทีหลัง ไม่ถ่วงกราฟให้ขึ้นช้า
-    loadRecentTrips(from, to, force);
+    // รายการ trip ไม่โหลดอัตโนมัติแล้ว — ใช้ช่อง "ค้นหารายการ" ด้านล่าง (เร็วขึ้น ไม่ถ่วง Dashboard)
   }).catch(function () {
     document.getElementById('dayBars').innerHTML = '<div class="empty">' + t('โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่') + '</div>';
     toast('โหลด Dashboard ไม่สำเร็จ', true);
@@ -1731,15 +2429,6 @@ function renderDonutInto(key, d, color) {
   document.getElementById('dPct' + key).textContent = d.plan > 0 ? pct + '%' : '—';
   document.getElementById('dInfo' + key).textContent = (LANG==='en' ? ('actual ' + d.trips + ' / plan ' + d.plan) : ('จริง ' + d.trips + ' / แผน ' + d.plan));
 }
-function loadRecentTrips(from, to, force) {
-  var wrap = document.getElementById('tripList');
-  wrap.innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> กำลังโหลดรายการ...</div>';
-  api({ action: 'getRecentTrips', token: S.adminToken, dir: S.dir, from: from, to: to, limit: 30 }, { retries: 2 })
-    .then(function (res) {
-      if (!res.ok) { wrap.innerHTML = '<div class="empty">' + t('โหลดรายการไม่สำเร็จ') + '</div>'; return; }
-      renderTrips(res.trips);
-    }).catch(function () { wrap.innerHTML = '<div class="empty">' + t('โหลดรายการไม่สำเร็จ') + '</div>'; });
-}
 function renderDonut(actual, plan) {
   var pct = plan > 0 ? Math.round((actual / plan) * 100) : 0;
   var arc = document.getElementById('donutArc');
@@ -1750,8 +2439,8 @@ function renderDonut(actual, plan) {
   document.getElementById('donutPct').textContent = plan > 0 ? pct + '%' : '—';
   document.getElementById('donutInfo').textContent = (LANG==='en' ? ('actual ' + actual + ' / plan ' + plan) : ('จริง ' + actual + ' / แผน ' + plan));
 }
-function renderBars2(perDay, perDayPlan, to) {
-  var wrap = document.getElementById('dayBars');
+function renderBars2(perDay, perDayPlan, to, elId) {
+  var wrap = document.getElementById(elId || 'dayBars');
   wrap.innerHTML = '';
   // สร้างแค่ 10 วันล่าสุด (นับถอยจากวันสุดท้ายของช่วง) — ไม่ loop ทั้งช่วง ไม่ค้าง
   var days = [];
@@ -1781,8 +2470,8 @@ function renderBars2(perDay, perDayPlan, to) {
     }, 60);
   });
 }
-function renderTopStores(entries) {
-  var wrap = document.getElementById('topStores');
+function renderTopStores(entries, elId) {
+  var wrap = document.getElementById(elId || 'topStores');
   entries = (entries || []).slice(0, 10);
   if (!entries.length) { wrap.innerHTML = '<div class="empty">' + t('ไม่มีข้อมูลในช่วงที่เลือก') + '</div>'; return; }
   var max = entries[0].n || 1;
@@ -1793,14 +2482,14 @@ function renderTopStores(entries) {
     row.style.animationDelay = (i * 0.04) + 's';
     row.innerHTML =
       '<span class="rk">' + (i + 1) + '</span>' +
-      '<span class="nm" title="' + e.code + '">' + e.code + '</span>' +
+      '<span class="nm" title="' + esc(e.code) + '">' + esc(e.code) + '</span>' +
       '<div class="track"><div class="fillb"></div></div>' +
       '<span class="ct">' + e.n + '</span>';
     wrap.appendChild(row);
     setTimeout(function () { row.querySelector('.fillb').style.width = Math.max((e.n / max) * 100, 4) + '%'; }, 80);
   });
 }
-function renderTrips(trips) {
+function renderTrips(trips, showDept) {
   var wrap = document.getElementById('tripList');
   if (!trips.length) { wrap.innerHTML = '<div class="empty">' + t('ไม่มี Trip ในช่วงที่เลือก') + '</div>'; return; }
   wrap.innerHTML = '';
@@ -1810,11 +2499,12 @@ function renderTrips(trips) {
     d.className = 'trip';
     d.style.animationDelay = Math.min(i * 0.03, 0.3) + 's';
     d.innerHTML =
-      '<div class="t1">' + (t.plate || t.docno) +
-        (t.truckSize ? '<span class="badge">' + t.truckSize + '</span>' : '') +
-        (isNight ? '<span class="badge night-b">🌙 กะดึก</span>' : '') +
+      '<div class="t1">' + esc(t.plate || t.docno) +
+        (showDept && t._dir ? '<span class="dept">' + DIRTAG[t._dir] + '</span>' : '') +
+        (t.truckSize ? '<span class="badge">' + esc(LANG === 'en' ? t.truckSize.replace('ล้อ', 'wheels') : t.truckSize) + '</span>' : '') +
+        (isNight ? '<span class="badge night-b">' + window.t('🌙 กะดึก') + '</span>' : '') +
       '</div>' +
-      '<div class="t2">' + (t.partyName || t.partyCode || '-') + ' · ' + t.docno + ' · ' + t.user + '</div>' +
+      '<div class="t2">' + esc(t.businessDate) + ' · ' + esc(t.partyName || t.partyCode || '-') + ' · ' + esc(t.docno) + ' · ' + esc(t.user) + '</div>' +
       '<div class="right"><div class="time">' + trTime(t.displayTime) + '</div><div class="ph">📷 ' + t.photoCount + (LANG === 'en' ? '' : ' รูป') + '</div></div>';
     d.onclick = function () { openPhotoModal(t); };
     wrap.appendChild(d);
@@ -1891,15 +2581,21 @@ function expMode(m) {
 }
 function switchExpDir(dir) {
   S.expDir = dir;
+  viewSave({ expDir: dir });
   document.getElementById('expDirOut').classList.toggle('on', dir === 'out');
   document.getElementById('expDirIn').classList.toggle('on', dir === 'in');
   document.getElementById('expDirPicking').classList.toggle('on', dir === 'picking');
-  document.getElementById('expStoreGroup').style.display = (dir === 'out' || dir === 'picking') ? 'block' : 'none';
-  document.getElementById('expSearchLabel').textContent = dir === 'in'
+  document.getElementById('expDirScan').classList.toggle('on', dir === 'scan');
+  document.getElementById('expStoreGroup').style.display = (dir === 'out' || dir === 'picking' || dir === 'scan') ? 'block' : 'none';
+  document.getElementById('expSearchLabel').textContent = t(dir === 'in'
     ? 'ค้นหา ทะเบียนรถ / เลข PO-Invoice-DO (ไม่บังคับ)'
     : dir === 'picking'
       ? 'ค้นหา Outbound Label (ไม่บังคับ)'
-      : 'ค้นหา ทะเบียนรถ / เลข Manifest (ไม่บังคับ)';
+      : dir === 'scan'
+        ? 'ค้นหาเลข Label / ผู้สแกน (ไม่บังคับ)'
+        : 'ค้นหา ทะเบียนรถ / เลข Manifest (ไม่บังคับ)');
+  setPh(document.getElementById('expSearch'), dir === 'scan' ? 'เช่น O8472609240050' : 'เช่น 82-1234 หรือ LM-2026...');
+  document.getElementById('dlRowScan').style.display = 'none';
   // ล้างผลเดิม
   document.getElementById('expSummary').classList.remove('on');
   document.getElementById('expList').innerHTML = '';
@@ -1910,13 +2606,18 @@ function queryExport() {
   var search = document.getElementById('expSearch').value.trim();
   var from = document.getElementById('expFrom').value;
   var to = expIsRange ? document.getElementById('expTo').value : from;
-  var store = (S.expDir === 'out') ? document.getElementById('expStore').value : '';
+  var store = (S.expDir !== 'in') ? document.getElementById('expStore').value : '';
   if (!search && !from) { toast('เลือกวันที่ หรือกรอกคำค้นหาก่อน', true); return; }
   var sum = document.getElementById('expSummary');
-  sum.classList.add('on'); sum.innerHTML = '<span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> กำลังค้นหา...';
+  sum.classList.add('on'); sum.innerHTML = '<span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> ' + t('กำลังค้นหา...');
   document.getElementById('expList').innerHTML = '';
   document.getElementById('selAllRow').style.display = 'none';
   document.getElementById('dlRow').style.display = 'none';
+  document.getElementById('dlRowScan').style.display = 'none';
+  if (S.expDir === 'scan') {
+    if (/^[0O]\d{13}$/i.test(search.replace(/\s+/g, ''))) search = normLabel(search);   // พิมพ์ 0 แทน O ก็หาเจอ
+    queryScanExport(from, to, store, search); return;
+  }
   api({ action: 'getExportData', token: S.adminToken, dir: S.expDir, from: from, to: to, storeCode: store, search: search })
     .then(function (res) {
       if (!res.ok) { sum.textContent = 'เกิดข้อผิดพลาด'; return; }
@@ -1988,7 +2689,7 @@ function setExpProg(pct, txt) {
   p.classList.add('on');
   document.getElementById('expFill').style.width = pct + '%';
   document.getElementById('expPct').textContent = Math.round(pct) + '%';
-  document.getElementById('expText').textContent = txt;
+  document.getElementById('expText').textContent = tr(txt);
 }
 function fetchAllPhotos(trip, onEach, onProgress) {
   var LIMIT = 6, CONC = 3;
@@ -2163,6 +2864,259 @@ function downloadZIP() {
   }).catch(function () {
     btn.disabled = false;
     toast('เชื่อมต่อ server ไม่ได้', true);
+  });
+}
+/* ================= DASHBOARD: ค้นหารายการ (กดค้นหาเองเท่านั้น) ================= */
+function setPh(el, th) { el.__placeholder = th; el.setAttribute('placeholder', t(th)); }
+function dsReset() {
+  document.getElementById('dsSummary').textContent = '';
+  document.getElementById('tripList').innerHTML = '<div class="empty">' + t('กดค้นหาเพื่อแสดงรายการ') + '</div>';
+}
+function fmtFound(total, shown, unit, q) {
+  var s;
+  if (LANG === 'en') {
+    s = 'Found <b>' + total + '</b> ' + unit + (shown < total ? ' · showing latest ' + shown : '');
+    if (q) s += ' (search: ' + esc(q) + ' — all dates)';
+  } else {
+    s = 'พบ <b>' + total + '</b> ' + unit + (shown < total ? ' · แสดง ' + shown + ' รายการล่าสุด' : '');
+    if (q) s += ' (ค้นหา: ' + esc(q) + ' — ทุกวันที่)';
+  }
+  return s;
+}
+document.getElementById('dsText').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); dashSearch(); } });
+function dashSearch() {
+  var q = document.getElementById('dsText').value.trim();
+  var from = document.getElementById('dashFrom').value, to = document.getElementById('dashTo').value;
+  if (!q && !from) { toast('เลือกวันที่ หรือกรอกคำค้นหาก่อน', true); return; }
+  var wrap = document.getElementById('tripList'), sum = document.getElementById('dsSummary');
+  sum.textContent = '';
+  wrap.innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span> ' + t('กำลังค้นหา...') + '</div>';
+  var fail = function () { wrap.innerHTML = '<div class="empty">' + t('โหลดรายการไม่สำเร็จ') + '</div>'; };
+  if (S.dir === 'scan') {
+    if (/^[0O]\d{13}$/i.test(q.replace(/\s+/g, ''))) q = normLabel(q);
+    api({ action: 'searchScans', token: S.adminToken, from: from, to: to, search: q, limit: 300 }, { retries: 2 })
+      .then(function (res) {
+        if (!res.ok) { if (res.error === 'UNAUTHORIZED') { toast('Session หมดอายุ — เข้าสู่ระบบใหม่', true); logout(); } fail(); return; }
+        sum.innerHTML = fmtFound(res.total, res.rows.length, LANG === 'en' ? 'pallets' : 'พาเลท', q) +
+          ' · Full ' + res.full + ' · Half ' + res.half;
+        renderScanTable(res.rows, wrap);
+      }).catch(fail);
+    return;
+  }
+  var dirs = (S.dir === 'all') ? ['out', 'in', 'picking'] : [S.dir];
+  Promise.all(dirs.map(function (d) {
+    return api({ action: 'getRecentTrips', token: S.adminToken, dir: d, from: from, to: to, search: q, limit: 100 }, { retries: 2 })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.error || 'fail');
+        res.trips.forEach(function (tp) { tp._dir = d; });
+        return res;
+      });
+  })).then(function (list) {
+    var trips = [], total = 0;
+    list.forEach(function (r) { trips = trips.concat(r.trips); total += r.total; });
+    trips.sort(function (a, b) { return a.ts < b.ts ? 1 : -1; });
+    sum.innerHTML = fmtFound(total, trips.length, 'trip', q);
+    renderTrips(trips, S.dir === 'all');
+  }).catch(function (e) {
+    if (e && e.message === 'UNAUTHORIZED') { toast('Session หมดอายุ — เข้าสู่ระบบใหม่', true); logout(); }
+    fail();
+  });
+}
+function renderScanTable(rows, wrap) {
+  if (!rows.length) { wrap.innerHTML = '<div class="empty">' + t('ไม่มีข้อมูลในช่วงที่เลือก') + '</div>'; return; }
+  var h = '<div class="tblwrap"><table class="scantable"><thead><tr>' +
+    '<th>' + t('วันที่') + '</th><th>' + t('เวลา') + '</th><th>Label</th><th>' + t('ประเภท') + '</th><th>Store</th><th>' + t('ผู้สแกน') + '</th>' +
+    '</tr></thead><tbody>';
+  rows.forEach(function (r) {
+    h += '<tr><td>' + esc(r.businessDate) + '</td><td>' + esc(trTime(r.displayTime)) + '</td><td class="mono">' + esc(r.label) +
+      '</td><td>' + esc(r.palletType) + '</td><td>' + esc(r.storeName || r.storeCode) + '</td><td>' + esc(r.scanner) + '</td></tr>';
+  });
+  wrap.innerHTML = h + '</tbody></table></div>';
+}
+function loadScanSummary(from, to, force) {
+  document.getElementById('scanBars').innerHTML = '<div class="empty"><span class="spin" style="border-color:var(--line2);border-top-color:var(--amber)"></span></div>';
+  api({ action: 'getScanSummary', token: S.adminToken, from: from, to: to, noCache: force ? 1 : 0 }, { retries: 2 })
+    .then(function (res) {
+      if (!res.ok) {
+        if (res.error === 'UNAUTHORIZED') { toast('Session หมดอายุ — เข้าสู่ระบบใหม่', true); logout(); }
+        return;
+      }
+      document.getElementById('stTrips').textContent = res.total.toLocaleString();
+      document.getElementById('stPhotos').textContent = res.full.toLocaleString();
+      document.getElementById('stTrucks').textContent = res.half.toLocaleString();
+      renderBars2(res.perDay || {}, {}, to, 'scanBars');
+      renderTopStores(res.topStore || [], 'scanTop');
+    }).catch(function () {
+      document.getElementById('scanBars').innerHTML = '<div class="empty">' + t('โหลดข้อมูลไม่สำเร็จ — ลองกดโหลดใหม่') + '</div>';
+      toast('โหลด Dashboard ไม่สำเร็จ', true);
+    });
+}
+
+/* ================= EXPORT: SCAN (CSV / PDF) ================= */
+function queryScanExport(from, to, store, search) {
+  var sum = document.getElementById('expSummary');
+  api({ action: 'searchScans', token: S.adminToken, from: from, to: to, storeCode: store, search: search, limit: 5000 }, { retries: 1, timeout: 60000 })
+    .then(function (res) {
+      if (!res.ok) { sum.textContent = t('เกิดข้อผิดพลาด'); return; }
+      S.exportScans = res.rows.slice().sort(function (a, b) { return a.ts < b.ts ? -1 : 1; });
+      S.exportScanMeta = { from: from, to: to, search: search, store: store, total: res.total, full: res.full, half: res.half };
+      if (!res.rows.length) {
+        sum.innerHTML = LANG === 'en' ? 'No data found' + (search ? ' matching "' + esc(search) + '"' : ' in the selected range')
+                                      : 'ไม่พบข้อมูล' + (search ? 'ที่ตรงกับ "' + esc(search) + '"' : 'ในช่วงที่เลือก');
+        return;
+      }
+      sum.innerHTML = (LANG === 'en'
+        ? 'Found <b>' + res.total.toLocaleString() + '</b> pallets · Full <b>' + res.full + '</b> · Half <b>' + res.half + '</b>'
+        : 'พบ <b>' + res.total.toLocaleString() + '</b> พาเลท · Full <b>' + res.full + '</b> · Half <b>' + res.half + '</b>') +
+        (res.total > res.rows.length ? (LANG === 'en' ? ' (first ' + res.rows.length + ' exported)' : ' (ส่งออกได้ ' + res.rows.length + ' รายการแรก)') : '') +
+        (search ? (LANG === 'en' ? ' (search: ' : ' (ค้นหา: ') + esc(search) + ')' : '');
+      var show = S.exportScans.slice(0, 200);
+      renderScanTable(show, document.getElementById('expList'));
+      if (S.exportScans.length > 200) {
+        document.getElementById('expList').insertAdjacentHTML('beforeend', '<div class="hint" style="text-align:center">' +
+          (LANG === 'en' ? 'Showing 200 of ' + S.exportScans.length + ' — download to get all' : 'แสดง 200 จาก ' + S.exportScans.length + ' รายการ — ดาวน์โหลดเพื่อดูทั้งหมด') + '</div>');
+      }
+      document.getElementById('dlRowScan').style.display = 'flex';
+    }).catch(function () { sum.textContent = t('เชื่อมต่อ server ไม่ได้'); });
+}
+function scanFileTag() {
+  var m = S.exportScanMeta || {};
+  return (S.demo ? 'DEMO_' : '') + (m.search ? 'search_' + m.search.replace(/[^\w-]/g, '') : (m.from + (m.to && m.to !== m.from ? '_to_' + m.to : '')));
+}
+function downloadBlob(blob, name) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+}
+function scanHeaders() {
+  return [t('วันที่'), t('เวลา'), t('เลข Label'), t('ประเภท'), t('รหัส Store'), t('ชื่อ Store'), t('ผู้สแกน'), t('เวลาระบบ')];
+}
+function downloadScanCSV() {
+  var rows = S.exportScans || [];
+  if (!rows.length) { toast('ยังไม่มีข้อมูล', true); return; }
+  function cell(v) { v = String(v == null ? '' : v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  var lines = [scanHeaders().map(cell).join(',')];
+  rows.forEach(function (r) {
+    var lbl = /^\d+$/.test(r.label) ? '="' + r.label + '"' : r.label;   // กัน Excel ตัดเลข 0 นำหน้า
+    lines.push([r.businessDate, trTime(r.displayTime), lbl, r.palletType, r.storeCode, r.storeName, r.scanner, r.ts].map(cell).join(','));
+  });
+  // BOM → Excel เปิดภาษาไทยได้ถูกต้อง
+  downloadBlob(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), 'WFDC_PalletScan_' + scanFileTag() + '.csv');
+  toast('ดาวน์โหลด Excel (CSV) เรียบร้อย');
+}
+/* PDF ตาราง — วาดบน Canvas ทีละหน้า (ภาษาไทยเรนเดอร์สมบูรณ์) แล้วใส่ jsPDF */
+function downloadScanPDF() {
+  var rows = S.exportScans || [];
+  if (!rows.length) { toast('ยังไม่มีข้อมูล', true); return; }
+  var btn = document.getElementById('btnScanPdf');
+  btn.disabled = true;
+  setExpProg(3, t('กำลังสร้าง PDF...'));
+  var m = S.exportScanMeta || {};
+  var PW = 1240, PH = 1754, MX = 64, RH = 34, FOOT = 70;
+  var FONT = '"IBM Plex Sans Thai", sans-serif', MONO = '"IBM Plex Mono", monospace';
+  var doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+  var pages = 0, cv, c, y;
+  var rangeTxt = m.search ? (t('ค้นหา') + ': ' + m.search) : (m.from + (m.to && m.to !== m.from ? ' – ' + m.to : ''));
+  function fit(txt, w) {
+    txt = String(txt == null ? '' : txt);
+    if (c.measureText(txt).width <= w) return txt;
+    while (txt.length > 1 && c.measureText(txt + '…').width > w) txt = txt.slice(0, -1);
+    return txt + '…';
+  }
+  function flush() {
+    if (!cv) return;
+    c.fillStyle = '#8B96AC'; c.font = '400 18px ' + FONT;
+    c.fillText('WFDC Pallet Scan · ' + rangeTxt, MX, PH - 34);
+    c.textAlign = 'right'; c.fillText((LANG === 'en' ? 'Page ' : 'หน้า ') + pages, PW - MX, PH - 34); c.textAlign = 'left';
+    if (pages > 1) doc.addPage();
+    doc.addImage(cv.toDataURL('image/jpeg', 0.86), 'JPEG', 0, 0, 210, 297);
+  }
+  function newPage() {
+    flush();
+    pages++;
+    cv = document.createElement('canvas'); cv.width = PW; cv.height = PH;
+    c = cv.getContext('2d');
+    c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, PW, PH);
+    c.fillStyle = '#141822'; c.fillRect(0, 0, PW, 128);
+    c.fillStyle = '#FFB224'; c.font = '600 40px ' + FONT;
+    c.fillText('WFDC PALLET SCAN' + (S.demo ? ' (DEMO)' : ''), MX, 62);
+    c.fillStyle = '#E8ECF4'; c.font = '400 22px ' + FONT;
+    c.fillText(rangeTxt + '    ' + (LANG === 'en' ? 'Total ' : 'รวม ') + rows.length + (LANG === 'en' ? ' pallets' : ' พาเลท') +
+      ' · Full ' + m.full + ' · Half ' + m.half, MX, 104);
+    y = 170;
+  }
+  function tableHead(cols) {
+    c.fillStyle = '#F2F4F8'; c.fillRect(MX, y - 24, PW - MX * 2, RH);
+    c.fillStyle = '#5C687E'; c.font = '600 18px ' + FONT;
+    cols.forEach(function (col) { c.textAlign = col.r ? 'right' : 'left'; c.fillText(col.h, col.r ? col.x + col.w : col.x, y); });
+    c.textAlign = 'left';
+    y += RH;
+  }
+  function row(cols, vals, bold) {
+    c.fillStyle = '#1B2233';
+    cols.forEach(function (col, i) {
+      c.font = (bold ? '600 ' : (col.mono ? '600 ' : '400 ')) + '19px ' + (col.mono ? MONO : FONT);
+      c.textAlign = col.r ? 'right' : 'left';
+      c.fillText(fit(vals[i], col.w - 8), col.r ? col.x + col.w : col.x, y);
+    });
+    c.textAlign = 'left';
+    c.strokeStyle = '#E3E7EF'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(MX, y + 10); c.lineTo(PW - MX, y + 10); c.stroke();
+    y += RH;
+  }
+  function title(txt) {
+    c.fillStyle = '#1B2233'; c.font = '600 26px ' + FONT;
+    c.fillText(txt, MX, y); y += 44;
+  }
+  var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  ready.then(function () {
+    newPage();
+    // 1) สรุปตาม Store
+    var per = {}, order = [];
+    rows.forEach(function (r) {
+      var k = r.storeName || r.storeCode || '-';
+      if (!per[k]) { per[k] = { full: 0, half: 0 }; order.push(k); }
+      if (r.palletType === 'Half') per[k].half++; else per[k].full++;
+    });
+    order.sort(function (a, b) { return (per[b].full + per[b].half) - (per[a].full + per[a].half); });
+    var sCols = [{ h: 'Store', x: MX + 8, w: 640 }, { h: 'Full', x: 760, w: 120, r: 1 }, { h: 'Half', x: 900, w: 120, r: 1 }, { h: t('รวม'), x: 1040, w: 130, r: 1 }];
+    title(t('สรุปตาม Store'));
+    tableHead(sCols);
+    order.forEach(function (k) {
+      if (y > PH - FOOT - RH) { newPage(); tableHead(sCols); }
+      row(sCols, [k, per[k].full, per[k].half, per[k].full + per[k].half]);
+    });
+    row(sCols, [t('รวม'), m.full, m.half, rows.length], true);
+    y += 30;
+    // 2) รายการทั้งหมด
+    var dCols = [{ h: '#', x: MX + 8, w: 60 }, { h: t('วันที่'), x: 140, w: 140 }, { h: t('เวลา'), x: 285, w: 170 },
+                 { h: t('เลข Label'), x: 460, w: 250, mono: 1 }, { h: t('ประเภท'), x: 715, w: 80 },
+                 { h: 'Store', x: 800, w: 230 }, { h: t('ผู้สแกน'), x: 1035, w: 140 }];
+    if (y > PH - FOOT - RH * 4) newPage();
+    title(t('รายการพาเลท'));
+    tableHead(dCols);
+    var i = 0;
+    function chunk() {
+      var end = Math.min(i + 120, rows.length);
+      for (; i < end; i++) {
+        if (y > PH - FOOT - RH) { newPage(); tableHead(dCols); }
+        var r = rows[i];
+        row(dCols, [i + 1, r.businessDate, trTime(r.displayTime), r.label, r.palletType, r.storeName || r.storeCode, r.scanner]);
+      }
+      setExpProg(5 + (i / rows.length) * 90, 'PDF ' + i + '/' + rows.length);
+      if (i < rows.length) return new Promise(function (res) { setTimeout(res, 0); }).then(chunk);
+    }
+    return chunk();
+  }).then(function () {
+    flush();
+    doc.save('WFDC_PalletScan_' + scanFileTag() + '.pdf');
+    setExpProg(100, 'เสร็จแล้ว');
+    btn.disabled = false;
+    toast('ดาวน์โหลด PDF เรียบร้อย');
+  }).catch(function () {
+    btn.disabled = false;
+    toast('เกิดข้อผิดพลาดระหว่างสร้าง PDF', true);
   });
 }
 </script>
