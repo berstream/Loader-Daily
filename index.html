@@ -6,46 +6,36 @@
 <title>WFDC Container Loading</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+html{background:#2F6FC4}
 :root{
-  --ink:#0B0E13; --panel:#131822; --panel2:#1A2130; --line:#242D3F; --line2:#313C52;
-  --txt:#E8ECF4; --sub:#8B96AC; --mut:#5A6478;
-  --amber:#FFB224; --amber-deep:#B87700; --amber-glow:rgba(255,178,36,.14);
-  --teal:#2DD4A7; --teal-bg:rgba(45,212,167,.12);
-  --red:#FF5D5D; --red-bg:rgba(255,93,93,.12);
-  --blue:#5AA7FF;
-  --r:14px;
-  --gridline:rgba(255,178,36,.025);
-  --topbar:rgba(11,14,19,.92);
-  --shadow:0 6px 20px rgba(0,0,0,.4);
-}
-body.light{
-  --ink:#F2F4F8; --panel:#FFFFFF; --panel2:#F5F7FB; --line:#E3E7EF; --line2:#C9D2E0;
-  --txt:#1B2233; --sub:#5C687E; --mut:#939DB2;
-  --amber:#E08E00; --amber-deep:#B87700; --amber-glow:rgba(224,142,0,.12);
-  --teal:#0FA47C; --teal-bg:rgba(15,164,124,.12);
-  --red:#D93F3F; --red-bg:rgba(217,63,63,.1);
-  --blue:#2E7CD6;
-  --gridline:rgba(27,34,51,.05);
-  --topbar:rgba(248,249,252,.92);
-  --shadow:0 6px 20px rgba(30,40,60,.14);
+  /* ธีมฟ้า-แดง (แบบ CDC) — ชื่อตัวแปรเดิมคงไว้ ค่าใหม่: amber = แดงเน้น, ink = น้ำเงินเข้ม */
+  --ink:#1C4A94; --navy:#1C4A94; --navy2:#2A5BA8; --navy3:#4C76B8; --subd:#C9D8F0;
+  --panel:#FFFFFF; --panel2:#F3F7FC; --line:#E8EFF9; --line2:#D6E2F2;
+  --txt:#1C4A94; --sub:#4E6584; --mut:#6B7F9C;
+  --amber:#DC3B2F; --amber-deep:#B32A20; --amber-glow:#FDECEA;
+  --teal:#1F9D6B; --teal-bg:#E7F6EE;
+  --red:#C62828; --red-bg:#FDECEC;
+  --blue:#2A5BA8;
+  --r:22px;
+  --topbar:#1C4A94;
+  --shadow:0 1px 0 #D6E2F2,0 14px 30px -20px rgba(16,42,90,.35);
+  --shadow-h:0 1px 0 #D6E2F2,0 24px 40px -22px rgba(16,42,90,.55);
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
 body{
-  font-family:'IBM Plex Sans Thai',sans-serif;background:var(--ink);color:var(--txt);
-  min-height:100vh;
-  background-image:
-    linear-gradient(var(--gridline) 1px,transparent 1px),
-    linear-gradient(90deg,var(--gridline) 1px,transparent 1px);
-  background-size:44px 44px;
-  transition:background-color .3s,color .3s;
+  font-family:'Kanit',sans-serif;color:var(--txt);min-height:100vh;
+  background:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px) 0 0/48px 48px,
+    linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px) 0 0/48px 48px,
+    linear-gradient(160deg,#B4D0F0 0%,#5C95DA 38%,#2B67BE 70%,#1C4A94 100%) fixed;
 }
-.mono{font-family:'IBM Plex Mono',monospace}
+.mono{font-family:'JetBrains Mono',monospace}
 .app{max-width:520px;margin:0 auto;padding:0 16px 90px}
-.app.wide{max-width:960px}
+.app.wide{max-width:1180px}
 
 /* ---------- hazard stripe accent ---------- */
 .hazard{height:6px;background:repeating-linear-gradient(-45deg,var(--amber) 0 14px,#0B0E13 14px 28px);border-radius:0 0 4px 4px}
@@ -56,16 +46,16 @@ body{
   border-bottom:1px solid var(--line);margin:0 -16px;padding:12px 20px 10px;
 }
 .clockbar .row{display:flex;justify-content:space-between;align-items:flex-end;max-width:520px;margin:0 auto}
-.app.wide .clockbar .row{max-width:960px}
+.app.wide .clockbar .row{max-width:1180px}
 .brand{font-size:12px;letter-spacing:.14em;color:var(--amber);font-weight:600}
 .brand small{display:block;color:var(--mut);letter-spacing:.05em;font-weight:400;margin-top:2px;font-size:11px}
 .clock{text-align:right}
-.clock .time{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;line-height:1;letter-spacing:.02em}
+.clock .time{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:600;line-height:1;letter-spacing:.02em}
 .clock .time .sec{font-size:16px;color:var(--sub)}
 .clock .date{font-size:12px;color:var(--sub);margin-top:3px}
 .clock .night{color:var(--amber);font-weight:600}
 .userchip{display:flex;align-items:center;gap:8px;margin-top:8px;max-width:520px;margin-left:auto;margin-right:auto;justify-content:space-between}
-.app.wide .userchip{max-width:960px}
+.app.wide .userchip{max-width:1180px}
 .userchip .who{font-size:12px;color:var(--sub)}
 .userchip .who b{color:var(--txt);font-weight:600}
 .userchip button{background:none;border:1px solid var(--line2);color:var(--sub);font-size:11px;padding:4px 12px;border-radius:99px;cursor:pointer;font-family:inherit}
@@ -142,7 +132,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   background:var(--panel2);border:1.5px solid var(--line2);border-radius:12px;padding:12px 4px 10px;
   text-align:center;cursor:pointer;transition:all .15s;user-select:none;
 }
-.truck .n{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1}
+.truck .n{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;line-height:1}
 .truck .l{font-size:11px;color:var(--sub);margin-top:3px}
 .truck.sel{background:var(--amber-glow);border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,178,36,.08)}
 .truck.sel .n{color:var(--amber)}
@@ -179,7 +169,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   background:rgba(0,0,0,.65);color:#fff;border:none;font-size:12px;line-height:1;cursor:pointer;
 }
 .photometa{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13px;color:var(--sub)}
-.photometa .cnt{font-family:'IBM Plex Mono',monospace;color:var(--amber);font-weight:600}
+.photometa .cnt{font-family:'JetBrains Mono',monospace;color:var(--amber);font-weight:600}
 
 /* progress */
 .prog{margin-top:16px;display:none}
@@ -213,14 +203,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 14px;animation:rise .4s ease both}
 .stat:nth-child(2){animation-delay:.06s}.stat:nth-child(3){animation-delay:.12s}
 .stat .lbl{font-size:12px;color:var(--sub)}
-.stat .val{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;margin-top:6px;line-height:1}
+.stat .val{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;margin-top:6px;line-height:1}
 .stat .val.am{color:var(--amber)}
 .chartcard{overflow:hidden}
 .bars{display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:8px}
 .barcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
 .barcol .b{width:100%;max-width:44px;background:var(--line2);border-radius:6px 6px 0 0;transition:height .5s cubic-bezier(.34,1.3,.64,1);min-height:3px;position:relative}
 .barcol .b.hot{background:linear-gradient(180deg,var(--amber),var(--amber-deep))}
-.barcol .b .v{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sub)}
+.barcol .b .v{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--sub)}
 .barcol .b.hot .v{color:var(--amber);font-weight:600}
 .barcol .d{font-size:11px;color:var(--mut)}
 .filters{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
@@ -233,13 +223,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .dcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center;animation:rise .4s ease both}
 .dcard:nth-child(2){animation-delay:.06s}.dcard:nth-child(3){animation-delay:.12s}
 .dhead{font-size:12.5px;color:var(--sub);margin-bottom:8px;font-weight:500}
-.dfoot{font-size:11.5px;color:var(--sub);margin-top:6px;font-family:'IBM Plex Mono',monospace}
+.dfoot{font-size:11.5px;color:var(--sub);margin-top:6px;font-family:'JetBrains Mono',monospace}
 @media(max-width:520px){.donutrow{grid-template-columns:1fr}.dcard{display:flex;align-items:center;gap:14px;text-align:left;padding:12px 14px}.dcard svg{flex-shrink:0;width:86px;height:86px}.dhead{margin-bottom:2px}}
 .dtab.on{background:var(--amber-glow);border-color:var(--amber);color:var(--amber)}
 /* plan + donut */
 .planwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .donut{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
-.donutlbl{font-size:12px;color:var(--sub);font-family:'IBM Plex Mono',monospace}
+.donutlbl{font-size:12px;color:var(--sub);font-family:'JetBrains Mono',monospace}
 .planedit{flex:1;min-width:200px}
 .pe-title{font-size:13px;color:var(--sub);margin-bottom:8px;font-weight:500}
 .planedit input[type=date]{margin-bottom:10px}
@@ -258,18 +248,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .barpair .b{width:14px;border-radius:4px 4px 0 0;transition:height .5s cubic-bezier(.34,1.3,.64,1);min-height:2px;position:relative}
 .barpair .b.plan{background:var(--line2)}
 .barpair .b.act{background:linear-gradient(180deg,var(--amber),var(--amber-deep))}
-.barpair .b .v{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);white-space:nowrap}
+.barpair .b .v{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--sub);white-space:nowrap}
 .barpair .b.act .v{color:var(--amber);font-weight:600}
 .barcol2 .d{font-size:11px;color:var(--mut)}
 
 /* top stores ranking */
 .hrow{display:flex;align-items:center;gap:10px;margin:8px 0;animation:rise .35s ease both}
-.hrow .rk{flex:0 0 22px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mut);text-align:center}
+.hrow .rk{flex:0 0 22px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--mut);text-align:center}
 .hrow:first-child .rk{color:var(--amber);font-weight:600}
 .hrow .nm{flex:0 0 34%;font-size:12.5px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
 .hrow .track{flex:1;height:16px;background:var(--panel2);border-radius:5px;overflow:hidden}
 .hrow .fillb{height:100%;background:linear-gradient(90deg,var(--amber-deep),var(--amber));border-radius:5px;width:0;transition:width .55s cubic-bezier(.34,1.2,.64,1)}
-.hrow .ct{flex:0 0 34px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--amber);font-weight:600;text-align:right}
+.hrow .ct{flex:0 0 34px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--amber);font-weight:600;text-align:right}
 .listhead{font-size:14px;font-weight:600;margin:20px 4px 0;color:var(--txt)}
 /* trip table */
 .triplist{margin-top:16px}
@@ -279,18 +269,18 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 }
 .trip:hover{border-color:var(--line2)}
 .trip .t1{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
-.trip .badge{font-size:11px;padding:2px 9px;border-radius:99px;background:var(--panel2);border:1px solid var(--line2);color:var(--sub);font-family:'IBM Plex Mono',monospace}
+.trip .badge{font-size:11px;padding:2px 9px;border-radius:99px;background:var(--panel2);border:1px solid var(--line2);color:var(--sub);font-family:'JetBrains Mono',monospace}
 .trip .night-b{background:var(--amber-glow);border-color:rgba(255,178,36,.4);color:var(--amber)}
 .trip .t2{font-size:13px;color:var(--sub);grid-column:1}
 .trip .right{grid-row:1/3;grid-column:2;text-align:right;display:flex;flex-direction:column;justify-content:center;gap:2px}
-.trip .right .time{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600}
+.trip .right .time{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600}
 .trip .right .ph{font-size:12px;color:var(--sub)}
 .empty{padding:40px;text-align:center;color:var(--mut);font-size:14px}
 
 /* ---------- export ---------- */
 .exp-summary{background:var(--panel2);border-radius:11px;padding:13px 15px;font-size:14px;color:var(--sub);margin-top:14px;display:none}
 .exp-summary.on{display:block}
-.exp-summary b{color:var(--amber);font-family:'IBM Plex Mono',monospace}
+.exp-summary b{color:var(--amber);font-family:'JetBrains Mono',monospace}
 .selall{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:13px;color:var(--sub)}
 .selall label{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500;color:var(--txt)}
 .selall input,.exptrip input{width:19px;height:19px;accent-color:var(--amber);cursor:pointer;flex-shrink:0}
@@ -303,7 +293,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .exptrip .info{flex:1;min-width:0}
 .exptrip .m{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .exptrip .s{font-size:12px;color:var(--sub);margin-top:1px}
-.exptrip .ph{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sub);text-align:right;flex-shrink:0}
+.exptrip .ph{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--sub);text-align:right;flex-shrink:0}
 .dl-row{display:flex;gap:10px;margin-top:14px}
 .dl-row .btn{flex:1}
 
@@ -335,7 +325,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   position:fixed;bottom:78px;right:18px;z-index:90;width:48px;height:48px;border-radius:50%;
   background:var(--panel);border:1px solid var(--line2);color:var(--txt);font-size:13px;font-weight:700;
   cursor:pointer;box-shadow:var(--shadow);transition:transform .15s,background .3s;
-  display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;
 }
 .langbtn:active{transform:scale(.92)}
 .themebtn{
@@ -360,7 +350,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .inrow{display:flex;gap:8px}
 .inrow input{flex:1;min-width:0}
 .inrow .btn{flex-shrink:0}
-.inapp{display:none;position:sticky;top:0;z-index:70;background:#E24B4A;color:#fff;font-size:13px;line-height:1.5;padding:10px 14px;text-align:center}
+.inapp{display:none;position:sticky;top:0;z-index:70;background:#DC3B2F;color:#fff;font-size:13px;line-height:1.5;padding:10px 14px;text-align:center}
 .inapp.on{display:block}
 .inapp button{margin:6px 4px 0;background:#fff;color:#B0302F;border:0;border-radius:99px;padding:5px 14px;font-weight:600;font-family:inherit;font-size:12.5px;cursor:pointer}
 .dsrow{display:flex;gap:8px;flex-wrap:wrap}
@@ -370,9 +360,174 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .scantable{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
 .scantable th,.scantable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
 .scantable th{color:var(--sub);font-weight:500;font-size:12px}
-.scantable td.mono{font-family:'IBM Plex Mono',monospace;font-weight:600}
+.scantable td.mono{font-family:'JetBrains Mono',monospace;font-weight:600}
 .tblwrap{max-height:420px;overflow:auto;margin-top:6px}
 .trip .dept{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--amber-glow);color:var(--amber)}
+
+/* =====================================================================
+   ธีมฟ้า-แดง + อนิเมชัน (override ของสไตล์เดิมด้านบน)
+   ===================================================================== */
+.hazard{display:none}
+/* --- แถบหัว --- */
+.clockbar{background:var(--navy);color:#fff;border:none;border-radius:0 0 26px 26px;padding:14px 20px 14px;box-shadow:0 12px 26px -16px rgba(16,42,90,.6);backdrop-filter:none}
+.brand{color:#fff;font-size:13px;letter-spacing:.1em;font-weight:700;line-height:1.25}
+.brand small{color:var(--subd);font-weight:500;letter-spacing:.08em}
+.clock .time{color:#fff;font-weight:700;font-size:28px}
+.clock .time .sec{color:var(--subd)}
+.clock .date{color:var(--subd)}
+.clock .night{color:#FFC2BC}
+.userchip{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14)}
+.userchip .who{color:var(--subd)}
+.userchip .who b{color:#fff}
+.userchip button{border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.1);color:#fff;font-weight:600;padding:6px 14px;transition:background .2s,transform .14s}
+.userchip button:active{transform:scale(.95);background:var(--amber);border-color:var(--amber)}
+/* --- Login --- */
+.brandrow{display:flex;align-items:center;gap:10px;padding:24px 4px 0}
+.brandrow .logo{width:42px;height:42px;border-radius:12px;background:var(--navy);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -10px rgba(16,42,90,.8)}
+.brandrow .t{font-weight:700;font-size:15px;letter-spacing:.06em;line-height:1.1;color:var(--navy)}
+.brandrow .t span{display:block;font-weight:500;color:#1C3E78;font-size:12px;letter-spacing:.12em}
+.login-hero{margin:18px 0 18px;padding:14px 14px 16px;background:rgba(255,255,255,.55);border:2px solid rgba(255,255,255,.85);border-radius:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.login-hero .glyph{display:none}
+.hero-box{background:linear-gradient(180deg,#E8483B,#D2352A);color:#fff;border:3px solid #fff;border-radius:16px;padding:14px 12px;box-shadow:0 6px 0 rgba(120,70,110,.35);animation:heroIn .7s var(--ease) both}
+.login-hero h1{font-size:27px;line-height:1.15;text-shadow:0 2px 0 rgba(0,0,0,.15)}
+.login-hero p{color:#FFE1DD;font-size:15px;font-weight:500;margin-top:4px}
+@keyframes heroIn{0%{opacity:0;transform:translateY(10px) scale(.95)}70%{transform:scale(1.02)}100%{opacity:1;transform:none}}
+.rolecard{background:#fff;border:none;border-radius:18px;padding:13px 14px;gap:12px;margin-bottom:10px;box-shadow:var(--shadow);transition:transform .2s var(--ease),box-shadow .2s}
+.rolecard:hover{transform:translateY(-3px);box-shadow:var(--shadow-h)}
+.rolecard:active{transform:scale(.97)}
+.rolecard .ic{width:46px;height:46px;border-radius:13px;color:#fff;border:none !important}
+.rolecard.loader .ic{background:var(--navy)}
+.rolecard.receiver .ic{background:var(--navy2)}
+.rolecard.picking .ic{background:var(--amber)}
+.rolecard.admin{background:rgba(255,255,255,.78);border:2px solid rgba(255,255,255,.9);box-shadow:none}
+.rolecard.admin .ic{background:#fff;color:var(--navy);border:2px solid var(--line2) !important}
+.rolecard.demo{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.55);box-shadow:none;color:#fff}
+.rolecard.demo .ic{background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.6) !important}
+.rolecard.demo p{color:var(--subd)}
+.rolecard h3{font-size:16px;font-weight:700}
+.rolecard p{font-size:12.5px;line-height:1.35}
+.rolecard .arrow{color:var(--navy3);font-size:24px;transition:transform .2s var(--ease)}
+.rolecard:hover .arrow{transform:translateX(4px)}
+.rolecard.demo .arrow{color:#fff}
+#roleSelect .rolecard:nth-child(1){animation-delay:.05s}#roleSelect .rolecard:nth-child(2){animation-delay:.1s}#roleSelect .rolecard:nth-child(3){animation-delay:.15s}#roleSelect .rolecard:nth-child(4){animation-delay:.2s}#roleSelect .rolecard:nth-child(5){animation-delay:.25s}
+.login-form{border:none;border-radius:22px;box-shadow:0 1px 0 var(--line2),0 18px 40px -18px rgba(16,42,90,.3);animation:pop .4s var(--ease) both}
+.login-form h3{font-size:18px;font-weight:700}
+.credit{text-align:center;font-size:11px;color:#fff;letter-spacing:.04em;margin-top:22px}
+/* --- ฟอร์ม --- */
+label.f{color:var(--sub);font-weight:600}
+input[type=text],input[type=password],input[type=date],input[type=number],select{background-color:var(--panel2);border:2px solid var(--line2);color:var(--navy);border-radius:14px}
+input:focus,select:focus{border-color:var(--navy);box-shadow:0 0 0 4px rgba(220,59,47,.16)}
+input:disabled,select:disabled{opacity:.7}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234E6584' stroke-width='2' fill='none'/%3E%3C/svg%3E")}
+#fManifest{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.02em}
+/* --- ปุ่ม --- */
+.btn{border-radius:16px;min-height:52px;font-weight:600;transition:transform .14s var(--ease),box-shadow .2s,filter .2s,background-color .25s}
+.btn:hover:not(:disabled){filter:brightness(1.05)}
+.btn:active:not(:disabled){transform:scale(.96)}
+.btn-amber{background:var(--amber);color:#fff;font-weight:700;box-shadow:0 10px 22px -10px rgba(220,59,47,.75)}
+.btn-ghost{background:#fff;border:2px solid var(--line2);color:var(--navy)}
+.btn-teal{background:var(--navy);color:#fff;box-shadow:0 10px 22px -12px rgba(16,42,90,.8)}
+.btn-sm{min-height:40px;border-radius:12px}
+#btnFinishAuto{min-height:58px;font-size:17px}
+/* --- การ์ด --- */
+.card{border:none;border-radius:22px;box-shadow:var(--shadow)}
+.card h2{font-size:18px;font-weight:700}
+.card h2 .tag{background:var(--amber-glow);color:var(--amber-deep);font-weight:700;letter-spacing:.08em}
+.view.on>.card:nth-of-type(2),.view.on>div>.card:nth-of-type(2){animation-delay:.07s}
+.view.on>.card:nth-of-type(3),.view.on>div>.card:nth-of-type(3){animation-delay:.14s}
+.view.on>.card:nth-of-type(4),.view.on>div>.card:nth-of-type(4){animation-delay:.21s}
+.truck{background:#fff;border:2px solid var(--line2);border-radius:14px;transition:transform .14s var(--ease),background-color .2s,border-color .2s}
+.truck.sel{background:var(--navy);border-color:var(--navy);box-shadow:0 8px 18px -10px rgba(16,42,90,.8)}
+.truck.sel .n,.truck.sel .l{color:#fff}
+.camrow{gap:12px}
+.cambtn{min-height:112px;border-radius:20px;font-size:16px}
+.cambtn.btn-amber{box-shadow:0 12px 24px -10px rgba(220,59,47,.75)}
+.cambtn .ic{display:flex}
+.thumbs{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.thumb{border-radius:12px;animation:pop .35s var(--ease) both}
+.thumb .x{width:26px;height:26px;top:4px;right:4px;background:rgba(16,42,90,.78);font-size:13px;transition:transform .14s}
+.thumb .x:active{transform:scale(.85)}
+.thumb.up::after{background:var(--teal);color:#fff;width:20px;height:20px;animation:pop .35s var(--ease) both}
+.photometa .cnt{color:var(--amber);font-weight:700}
+.prog .bar{background:var(--line)}
+.prog .fill{background:var(--teal);transition:width .4s var(--ease)}
+.prog .lbl b{color:var(--teal)}
+.autostat{background:var(--panel2);border-radius:14px;color:var(--sub)}
+.autostat .dot.ok{background:var(--teal);animation:livedot 1.8s ease-in-out infinite}
+@keyframes livedot{0%,100%{box-shadow:0 0 0 0 rgba(31,157,107,.45)}50%{box-shadow:0 0 0 6px rgba(31,157,107,0)}}
+.scanbox .frame{border-color:rgba(220,59,47,.95)}
+/* --- สำเร็จ --- */
+.success{padding:36px 0}
+.success .ring{background:var(--teal-bg);border:4px solid var(--teal);color:var(--teal);animation:popBig .6s .1s var(--ease) both}
+@keyframes popBig{0%{opacity:0;transform:scale(.5)}70%{transform:scale(1.1)}100%{opacity:1;transform:none}}
+.success h2{color:#fff;font-size:26px;text-shadow:0 2px 0 rgba(16,42,90,.25)}
+.success .meta{border:none;border-radius:20px;box-shadow:var(--shadow);animation:rise .5s .2s var(--ease) both}
+.success .meta div{border-bottom:1px solid var(--line);padding:9px 0}
+.success .meta div:last-child{border-bottom:none}
+.success .meta b{text-align:right}
+/* --- Dashboard --- */
+.tab{background:rgba(255,255,255,.8);border:2px solid rgba(255,255,255,.9);border-radius:14px;color:var(--navy);font-weight:600;transition:background-color .25s,color .25s,transform .14s var(--ease),box-shadow .25s}
+.tab:active{transform:scale(.96)}
+.tab.on{background:var(--amber);border-color:var(--amber);color:#fff;box-shadow:0 8px 18px -8px rgba(220,59,47,.9)}
+.dtab{background:rgba(255,255,255,.8);border:2px solid rgba(255,255,255,.9);border-radius:14px;color:var(--navy);transition:background-color .25s,color .25s,transform .14s var(--ease)}
+.dtab:hover{transform:translateY(-2px)}
+.dtab:active{transform:scale(.96)}
+.dtab.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.filters label.f{color:#fff}
+.stat{border:none;border-radius:20px;box-shadow:var(--shadow);animation:pop .45s var(--ease) both;transition:transform .2s var(--ease),box-shadow .2s}
+.stat:hover{transform:translateY(-3px);box-shadow:var(--shadow-h)}
+.stat:first-child{background:var(--amber)}
+.stat:first-child .lbl{color:#FFE1DD}
+.stat .val{font-weight:700}
+.stat:first-child .val.am{color:#fff}
+.dcard{border:none;border-radius:20px;box-shadow:var(--shadow);animation:pop .45s var(--ease) both}
+#allView,#deptView,#scanView,#dashSearchCard,#adm-dash,#adm-exp{animation:rise .45s var(--ease) both}
+.bars2{gap:6px}
+.barpair{gap:2px}
+.barpair .b{width:auto;flex:1;max-width:16px;border-radius:6px 6px 0 0;transition:height .8s cubic-bezier(.34,1.35,.64,1)}
+.barpair .b.plan{background:var(--subd)}
+.barpair .b.act{background:var(--amber)}
+.barlegend .lg-plan{background:var(--subd)}
+.barlegend .lg-act{background:var(--amber)}
+.hrow .fillb{background:linear-gradient(90deg,var(--navy2),var(--amber));border-radius:99px;transition:width .9s cubic-bezier(.34,1.2,.64,1)}
+.hrow .track{border-radius:99px;height:12px;background:var(--line)}
+.hrow .ct{color:var(--navy)}
+.hrow:first-child .rk{color:var(--amber)}
+.listhead{color:#fff}
+.trip{border:2px solid var(--line);border-radius:16px;box-shadow:none;transition:transform .2s var(--ease),border-color .2s,background-color .2s}
+.trip:hover{transform:translateX(3px);border-color:var(--line2);background:var(--panel2)}
+.trip .night-b{background:var(--amber-glow);border-color:#F6C4BF;color:var(--amber-deep)}
+.trip .dept{background:var(--amber-glow);color:var(--amber-deep)}
+.triplist .trip:nth-child(2){animation-delay:.04s}.triplist .trip:nth-child(3){animation-delay:.08s}.triplist .trip:nth-child(4){animation-delay:.12s}.triplist .trip:nth-child(5){animation-delay:.16s}
+.planhint{color:var(--teal);background:var(--teal-bg);border-color:#BFE6D3}
+/* --- Export --- */
+.exp-summary{background:var(--panel2);border-radius:14px}
+.exp-summary b{color:var(--amber)}
+.selall input,.exptrip input{accent-color:var(--amber)}
+.exptrip{background:#fff;border:2px solid var(--line);border-radius:14px;transition:transform .2s var(--ease),border-color .2s}
+.exptrip:hover{border-color:var(--line2);transform:translateX(3px)}
+/* --- อื่นๆ --- */
+.modal{background:rgba(16,42,90,.92)}
+.modal .mhead{background:rgba(16,42,90,.95)}
+.modal .mhead button{background:var(--amber);border:none;color:#fff}
+.modal .loadmore{color:#fff;border-color:rgba(255,255,255,.5)}
+.mgrid img{border-radius:12px;animation:pop .35s var(--ease) both}
+.toast{background:var(--navy);border:none;color:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:transform .35s var(--ease)}
+.toast.bad{background:var(--red);border:none;color:#fff}
+.toast{visibility:hidden}.toast.on{visibility:visible}
+input[type=number]{width:100%;padding:9px 10px;font-size:15px;font-family:'JetBrains Mono',monospace;font-weight:700;outline:none;appearance:textfield}
+.pe-fields{gap:8px}.pe-fields>div{min-width:0}
+.langbtn{bottom:22px;background:var(--navy);border:2px solid rgba(255,255,255,.7);color:#fff;font-family:'JetBrains Mono',monospace;box-shadow:0 10px 24px -10px rgba(16,42,90,.8)}
+.spin{border-color:rgba(255,255,255,.35);border-top-color:currentColor}
+.btn-ghost .spin,.trip .spin,.empty .spin{border-color:var(--line2);border-top-color:var(--amber)}
+.empty{color:var(--sub)}
+.dsum b{color:var(--navy)}
+@media (min-width:900px){
+  #deptView{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;align-items:start}
+  #scanView{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;align-items:start}
+  .stats{gap:14px}.stat .val{font-size:32px}
+}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
 </style>
 </head>
 <body>
@@ -402,34 +557,39 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- ============ VIEW: LOGIN ============ -->
   <div class="view on" id="v-login">
+    <div class="brandrow">
+      <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+      <div class="t">WFDC<span>CONTAINER LOADING</span></div>
+    </div>
     <div class="login-hero">
-      <div class="glyph">🏗️</div>
-      <h1>WFDC Container Loading</h1>
-      <p>ระบบบันทึกภาพโหลดสินค้าเข้าตู้คอนเทนเนอร์</p>
+      <div class="hero-box">
+        <h1>WFDC Container Loading</h1>
+        <p>ระบบบันทึกภาพโหลดสินค้าเข้าตู้คอนเทนเนอร์</p>
+      </div>
     </div>
     <div id="roleSelect">
       <div class="rolecard loader" onclick="chooseUserRole('out')">
-        <div class="ic">📦</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
         <div><h3>Loader (Outbound)</h3><p>โหลดสินค้าขึ้นรถส่ง Store — บันทึกและอัพโหลดรูป</p></div>
         <div class="arrow">›</div>
       </div>
       <div class="rolecard receiver" style="animation-delay:.08s" onclick="chooseUserRole('in')">
-        <div class="ic">📥</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg></div>
         <div><h3>Receiver (Inbound)</h3><p>รับของจาก Supplier เข้าคลัง — บันทึกและอัพโหลดรูป</p></div>
         <div class="arrow">›</div>
       </div>
       <div class="rolecard picking" style="animation-delay:.16s" onclick="chooseUserRole('picking')">
-        <div class="ic">✅</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></div>
         <div><h3>Picking (QC)</h3><p>ตรวจสอบสินค้าก่อนโหลด — บันทึกและอัพโหลดรูป</p></div>
         <div class="arrow">›</div>
       </div>
       <div class="rolecard admin" style="animation-delay:.24s" onclick="showAdminForm()">
-        <div class="ic">🗂️</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
         <div><h3>Warehouse Admin</h3><p>Dashboard · ดึงข้อมูลย้อนหลัง · Export</p></div>
         <div class="arrow">›</div>
       </div>
       <div class="rolecard demo" style="animation-delay:.32s" onclick="showDemoForm()">
-        <div class="ic">🧪</div>
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4 19a1.5 1.5 0 0 0 1.3 2h13.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/></svg></div>
         <div><h3>Demo (ทดสอบ)</h3><p>ทดลองใช้งาน — ข้อมูลแยก ไม่กระทบของจริง</p></div>
         <div class="arrow">›</div>
       </div>
@@ -463,6 +623,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <button class="btn btn-amber" id="btnAdminLogin" onclick="loginAdmin()">เข้าสู่ระบบ</button>
       <button class="btn btn-ghost" style="margin-top:10px" onclick="backToRoles()">ย้อนกลับ</button>
     </div>
+    <div class="credit">CJ IT By Nutdanai Pathsith</div>
   </div>
 
   <!-- ============ VIEW: UPLOAD ============ -->
@@ -517,10 +678,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <h2>รูปภาพการโหลด <span class="tag">PHOTOS</span></h2>
       <div class="camrow">
         <button class="btn btn-amber cambtn" onclick="pickPhotos('cam')">
-          <span class="ic">📷</span><span>ถ่ายรูป</span>
+          <span class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span>ถ่ายรูป</span>
         </button>
         <button class="btn btn-ghost cambtn" onclick="pickPhotos('file')">
-          <span class="ic">🖼️</span><span>เลือกจากคลัง</span>
+          <span class="ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span><span>เลือกจากคลัง</span>
         </button>
       </div>
       <p class="camhint galhint">🖼️ เลือกหลายรูปพร้อมกัน: iPhone แตะเลือกหลายรูปแล้วกด “เพิ่ม” · Android กดค้างที่รูปแรก แล้วแตะรูปอื่นต่อ<br>ถ้าเลือกได้ทีละรูป ให้เลือกเมนู “ไฟล์” หรือ “Photos” แทน “แกลเลอรี” — หรือกดเลือกซ้ำได้ รูปจะสะสมต่อ</p>
@@ -599,9 +760,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div class="dhead">📤 Outbound</div>
             <svg viewBox="0 0 120 120" width="118" height="118">
               <circle cx="60" cy="60" r="50" fill="none" stroke="var(--panel2)" stroke-width="14"/>
-              <circle id="dArcOut" cx="60" cy="60" r="50" fill="none" stroke="#EDA100" stroke-width="14" stroke-linecap="round"
+              <circle id="dArcOut" cx="60" cy="60" r="50" fill="none" stroke="#1C4A94" stroke-width="14" stroke-linecap="round"
                       stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s cubic-bezier(.34,1.2,.64,1)"/>
-              <text id="dPctOut" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'IBM Plex Mono',monospace">—</text>
+              <text id="dPctOut" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'JetBrains Mono',monospace">—</text>
               <text x="60" y="76" text-anchor="middle" font-size="9" fill="var(--sub)">ทำได้/แผน</text>
             </svg>
             <div class="dfoot" id="dInfoOut">จริง — / แผน —</div>
@@ -610,9 +771,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div class="dhead">📥 Inbound</div>
             <svg viewBox="0 0 120 120" width="118" height="118">
               <circle cx="60" cy="60" r="50" fill="none" stroke="var(--panel2)" stroke-width="14"/>
-              <circle id="dArcIn" cx="60" cy="60" r="50" fill="none" stroke="#2A78D6" stroke-width="14" stroke-linecap="round"
+              <circle id="dArcIn" cx="60" cy="60" r="50" fill="none" stroke="#4C76B8" stroke-width="14" stroke-linecap="round"
                       stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s cubic-bezier(.34,1.2,.64,1)"/>
-              <text id="dPctIn" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'IBM Plex Mono',monospace">—</text>
+              <text id="dPctIn" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'JetBrains Mono',monospace">—</text>
               <text x="60" y="76" text-anchor="middle" font-size="9" fill="var(--sub)">ทำได้/แผน</text>
             </svg>
             <div class="dfoot" id="dInfoIn">จริง — / แผน —</div>
@@ -621,9 +782,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             <div class="dhead">✅ Picking</div>
             <svg viewBox="0 0 120 120" width="118" height="118">
               <circle cx="60" cy="60" r="50" fill="none" stroke="var(--panel2)" stroke-width="14"/>
-              <circle id="dArcPick" cx="60" cy="60" r="50" fill="none" stroke="#E24B4A" stroke-width="14" stroke-linecap="round"
+              <circle id="dArcPick" cx="60" cy="60" r="50" fill="none" stroke="#DC3B2F" stroke-width="14" stroke-linecap="round"
                       stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s cubic-bezier(.34,1.2,.64,1)"/>
-              <text id="dPctPick" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'IBM Plex Mono',monospace">—</text>
+              <text id="dPctPick" x="60" y="58" text-anchor="middle" font-size="20" font-weight="700" fill="var(--txt)" font-family="'JetBrains Mono',monospace">—</text>
               <text x="60" y="76" text-anchor="middle" font-size="9" fill="var(--sub)">ทำได้/แผน</text>
             </svg>
             <div class="dfoot" id="dInfoPick">จริง — / แผน —</div>
@@ -642,7 +803,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
               <circle id="donutArc" cx="60" cy="60" r="50" fill="none" stroke="var(--amber)" stroke-width="14"
                       stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"
                       transform="rotate(-90 60 60)" style="transition:stroke-dashoffset .8s cubic-bezier(.34,1.2,.64,1)"/>
-              <text id="donutPct" x="60" y="58" text-anchor="middle" font-size="22" font-weight="700" fill="var(--txt)" font-family="'IBM Plex Mono',monospace">—</text>
+              <text id="donutPct" x="60" y="58" text-anchor="middle" font-size="22" font-weight="700" fill="var(--txt)" font-family="'JetBrains Mono',monospace">—</text>
               <text x="60" y="76" text-anchor="middle" font-size="9" fill="var(--sub)">ทำได้/แผน</text>
             </svg>
             <div class="donutlbl" id="donutInfo">จริง — / แผน —</div>
@@ -760,7 +921,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <button class="langbtn" id="langBtn" onclick="toggleLang()" title="Switch language / สลับภาษา">EN</button>
-<button class="themebtn" id="themeBtn" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">☀️</button>
 
 <div class="toast" id="toast"></div>
 
@@ -1167,21 +1327,6 @@ function tick() {
   document.getElementById('clkDate').innerHTML = dateStr;
 }
 setInterval(tick, 1000); tick();
-
-/* ================= THEME ================= */
-function applyTheme(t) {
-  document.body.classList.toggle('light', t === 'light');
-  document.getElementById('themeBtn').textContent = t === 'light' ? '🌙' : '☀️';
-  try { localStorage.setItem('wfdc_theme', t); } catch (e) {}
-}
-function toggleTheme() {
-  applyTheme(document.body.classList.contains('light') ? 'dark' : 'light');
-}
-(function initTheme() {
-  var saved = 'dark';
-  try { saved = localStorage.getItem('wfdc_theme') || 'dark'; } catch (e) {}
-  applyTheme(saved);
-})();
 
 /* ================= TOAST ================= */
 var toastTimer;
@@ -2156,7 +2301,7 @@ function applyDirTabUI() {
   var isAll = (S.dir === 'all'), isScan = (S.dir === 'scan');
   document.getElementById('dirAll').classList.toggle('on', isAll);
   document.getElementById('dirScan').classList.toggle('on', isScan);
-  document.getElementById('scanView').style.display = isScan ? 'block' : 'none';
+  document.getElementById('scanView').style.display = isScan ? '' : 'none';
   document.getElementById('dsTag').textContent = isAll ? 'ALL' : isScan ? 'SCAN' : (DIRTAG[S.dir] || 'OUTBOUND');
   setPh(document.getElementById('dsText'), isScan ? 'เลข Label / Store / ชื่อผู้สแกน'
     : S.dir === 'picking' ? 'Outbound Label / Store / ชื่อผู้ตรวจ' : 'ทะเบียน / เลขเอกสาร / Store / ชื่อผู้บันทึก');
@@ -2166,7 +2311,7 @@ function applyDirTabUI() {
   document.getElementById('dirPicking').classList.toggle('on', S.dir === 'picking');
   document.getElementById('allView').style.display = isAll ? 'block' : 'none';
   document.getElementById('demoTools').style.display = S.demo ? 'block' : 'none';
-  document.getElementById('deptView').style.display = (isAll || isScan) ? 'none' : 'block';
+  document.getElementById('deptView').style.display = (isAll || isScan) ? 'none' : '';
   document.getElementById('stTripsLbl').textContent = t(isAll ? 'Trip รวมทุกแผนก' : isScan ? 'พาเลททั้งหมด' : 'Trip ทั้งหมด');
   document.getElementById('stTrucksLbl').textContent = t(isScan ? 'เฉลี่ย/วัน' : (S.dir === 'picking') ? 'Store ที่ตรวจ' : 'รถที่เข้า');
   if (!isAll && !isScan) {
@@ -2238,9 +2383,9 @@ function loadSummaryAll(from, to, force) {
       document.getElementById('stTrips').textContent = res.total.trips;
       document.getElementById('stPhotos').textContent = res.total.photos.toLocaleString();
       document.getElementById('stTrucks').textContent = res.total.trucks;
-      renderDonutInto('Out', res.per.out, '#EDA100');
-      renderDonutInto('In', res.per['in'], '#2A78D6');
-      renderDonutInto('Pick', res.per.picking, '#E24B4A');
+      renderDonutInto('Out', res.per.out, '#1C4A94');
+      renderDonutInto('In', res.per['in'], '#4C76B8');
+      renderDonutInto('Pick', res.per.picking, '#DC3B2F');
     }).catch(function () { toast('โหลดข้อมูลรวมไม่สำเร็จ', true); });
 }
 function renderDonutInto(key, d, color) {
@@ -2248,7 +2393,7 @@ function renderDonutInto(key, d, color) {
   var pct = d.plan > 0 ? Math.round((d.trips / d.plan) * 100) : 0;
   var arc = document.getElementById('dArc' + key), circ = 314;
   arc.style.strokeDashoffset = circ - (circ * Math.min(pct, 100) / 100);
-  arc.setAttribute('stroke', pct >= 100 ? '#2DD4A7' : color);
+  arc.setAttribute('stroke', pct >= 100 ? '#1F9D6B' : color);
   document.getElementById('dPct' + key).textContent = d.plan > 0 ? pct + '%' : '—';
   document.getElementById('dInfo' + key).textContent = (LANG==='en' ? ('actual ' + d.trips + ' / plan ' + d.plan) : ('จริง ' + d.trips + ' / แผน ' + d.plan));
 }
@@ -2554,14 +2699,14 @@ function makeHeaderImage(t) {
   cv.width = 210 * scale * 2; cv.height = 27 * scale * 2;
   var c = cv.getContext('2d');
   var u = scale * 2;
-  c.fillStyle = '#141822';
+  c.fillStyle = '#1C4A94';
   c.fillRect(0, 0, cv.width, cv.height);
   var isPick = (S.expDir === 'picking');
-  c.fillStyle = '#FFB224';
-  c.font = '600 ' + (5.2 * u) + 'px "IBM Plex Sans Thai", sans-serif';
+  c.fillStyle = '#FFFFFF';
+  c.font = '600 ' + (5.2 * u) + 'px "Kanit", sans-serif';
   c.fillText(isPick ? 'WFDC PICKING COMPLETE' : (S.expDir === 'in' ? 'WFDC RECEIVING' : 'WFDC CONTAINER LOADING'), 10 * u, 8.5 * u);
   c.fillStyle = '#E8ECF4';
-  c.font = '400 ' + (3.6 * u) + 'px "IBM Plex Sans Thai", sans-serif';
+  c.font = '400 ' + (3.6 * u) + 'px "Kanit", sans-serif';
   var docLbl = isPick ? 'Outbound Label' : (S.expDir === 'in') ? 'เอกสาร' : 'Manifest';
   var partyLbl = (S.expDir === 'in') ? 'Supplier' : 'Store';
   c.fillText(docLbl + ': ' + t.docno + (isPick ? '' : '    ทะเบียน: ' + t.plate + '    รถ: ' + t.truckSize), 10 * u, 15.5 * u);
@@ -2837,7 +2982,7 @@ function downloadScanPDF() {
   setExpProg(3, t('กำลังสร้าง PDF...'));
   var m = S.exportScanMeta || {};
   var PW = 1240, PH = 1754, MX = 64, RH = 34, FOOT = 70;
-  var FONT = '"IBM Plex Sans Thai", sans-serif', MONO = '"IBM Plex Mono", monospace';
+  var FONT = '"Kanit", sans-serif', MONO = '"JetBrains Mono", monospace';
   var doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
   var pages = 0, cv, c, y;
   var rangeTxt = m.search ? (t('ค้นหา') + ': ' + m.search) : (m.from + (m.to && m.to !== m.from ? ' – ' + m.to : ''));
@@ -2861,8 +3006,8 @@ function downloadScanPDF() {
     cv = document.createElement('canvas'); cv.width = PW; cv.height = PH;
     c = cv.getContext('2d');
     c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, PW, PH);
-    c.fillStyle = '#141822'; c.fillRect(0, 0, PW, 128);
-    c.fillStyle = '#FFB224'; c.font = '600 40px ' + FONT;
+    c.fillStyle = '#1C4A94'; c.fillRect(0, 0, PW, 128);
+    c.fillStyle = '#FFFFFF'; c.font = '600 40px ' + FONT;
     c.fillText('WFDC PALLET SCAN' + (S.demo ? ' (DEMO)' : ''), MX, 62);
     c.fillStyle = '#E8ECF4'; c.font = '400 22px ' + FONT;
     c.fillText(rangeTxt + '    ' + (LANG === 'en' ? 'Total ' : 'รวม ') + rows.length + (LANG === 'en' ? ' pallets' : ' พาเลท'), MX, 104);
